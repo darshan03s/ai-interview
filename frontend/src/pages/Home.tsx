@@ -11,10 +11,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { createInterview } from "@/api";
+import { toast } from "sonner";
 
 type PdfFile = {
   file: File;
   url: string;
+};
+
+type Interview = {
+  interview_id: string;
+  created_at: string;
+  user_id: string;
+  title: string;
+
 };
 
 const Home = () => {
@@ -23,6 +33,8 @@ const Home = () => {
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [creatingInterview, setCreatingInterview] = useState(false);
+  const [interview, setInterview] = useState<Interview | null>(null);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
@@ -49,7 +61,7 @@ const Home = () => {
     if (!file) return;
 
     setUploadError("");
-    
+
     const validationError = validateFile(file);
     if (validationError) {
       setUploadError(validationError);
@@ -57,7 +69,7 @@ const Home = () => {
     }
 
     const fileUrl = URL.createObjectURL(file);
-    
+
     setSelectedPdf({
       file,
       url: fileUrl,
@@ -88,10 +100,36 @@ const Home = () => {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedPdf) {
-      // TODO: Navigate to interview page or next step
-      console.log('Continue with PDF:', selectedPdf.file.name);
+      setCreatingInterview(true);
+      const token = session?.access_token;
+      if (!token) {
+        console.error('User not signed in');
+        return;
+      }
+      try {
+        const response = await createInterview(token);
+        if (!response.ok) {
+          toast.error('Failed to create interview, Bad response from server');
+          console.error('Failed to create interview, Bad response from server');
+          return;
+        }
+        const interviewResponse = await response.json();
+        if (!interviewResponse.interview) {
+          toast.error('Failed to create interview, No interview ID returned');
+          console.error('Failed to create interview, No interview ID returned');
+          return;
+        }
+        setInterview(interviewResponse.interview);
+        console.log('Interview created:', interviewResponse.interview);
+        // console.log('Continue with PDF:', selectedPdf.file.name);
+      } catch (error) {
+        toast.error('Failed to create interview, Error from server');
+        console.error('Failed to create interview, Error from server:', error);
+      } finally {
+        setCreatingInterview(false);
+      }
     }
   };
 
@@ -104,7 +142,7 @@ const Home = () => {
             Upload Your Resume
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume in PDF format to get started with your AI-powered interview. 
+            Upload your resume in PDF format to get started with your AI-powered interview.
             Our AI will analyze your experience and prepare personalized questions.
           </p>
         </div>
@@ -122,12 +160,11 @@ const Home = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* File Input Area */}
-            <div 
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                selectedPdf 
-                  ? 'border-green-300 bg-green-50 dark:bg-green-950/20' 
-                  : 'border-border hover:border-primary/50 hover:bg-accent/50'
-              }`}
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${selectedPdf
+                ? 'border-green-300 bg-green-50 dark:bg-green-950/20'
+                : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                }`}
               onClick={handleFileSelect}
             >
               <div className="flex flex-col items-center gap-4">
@@ -142,8 +179,8 @@ const Home = () => {
                         {formatFileSize(selectedPdf.file.size)} • PDF File
                       </p>
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -166,7 +203,7 @@ const Home = () => {
                     </div>
                     {!session && (
                       <p className="text-xs text-orange-600 dark:text-orange-400">
-                        Sign in required to upload files
+                        {!authLoading && 'Sign in required to upload files'}
                       </p>
                     )}
                   </>
@@ -193,36 +230,15 @@ const Home = () => {
           </CardContent>
         </Card>
 
-        {/* File Upload Success Message */}
-        {selectedPdf && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center text-center space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full">
-                    <FileText className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-medium text-foreground">
-                    Resume Uploaded Successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your resume "{selectedPdf.file.name}" has been uploaded and is ready for processing.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Continue Button */}
         {selectedPdf && (
           <div className="flex justify-center">
-            <Button 
+            <Button
               onClick={handleContinue}
               size="lg"
               className="min-w-32"
             >
-              Continue
+              {creatingInterview ? 'Creating Interview...' : 'Continue'}
             </Button>
           </div>
         )}
@@ -240,7 +256,7 @@ const Home = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 pt-4">
-              <Button 
+              <Button
                 onClick={handleSignIn}
                 disabled={authLoading}
                 className="w-full"
@@ -257,8 +273,8 @@ const Home = () => {
                   </>
                 )}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowSignInModal(false)}
               >
                 Cancel
