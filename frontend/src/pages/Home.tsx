@@ -24,7 +24,6 @@ type Interview = {
   created_at: string;
   user_id: string;
   title: string;
-
 };
 
 const Home = () => {
@@ -36,7 +35,8 @@ const Home = () => {
   const [creatingInterview, setCreatingInterview] = useState(false);
   const [interview, setInterview] = useState<Interview | null>(null);
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+  const MAX_FILE_SIZE_NUMBER = 2;
+  const MAX_FILE_SIZE = MAX_FILE_SIZE_NUMBER * 1024 * 1024;
 
   const handleFileSelect = () => {
     if (!session) {
@@ -51,7 +51,7 @@ const Home = () => {
       return 'Please select a PDF file only.';
     }
     if (file.size > MAX_FILE_SIZE) {
-      return 'File size must be less than 5MB.';
+      return `File size must be less than ${MAX_FILE_SIZE_NUMBER}MB.`;
     }
     return null;
   };
@@ -104,12 +104,13 @@ const Home = () => {
     if (selectedPdf) {
       setCreatingInterview(true);
       const token = session?.access_token;
+      const username = session?.user?.user_metadata.full_name;
       if (!token) {
         console.error('User not signed in');
         return;
       }
       try {
-        const response = await createInterview(token);
+        const response = await createInterview(token, username, selectedPdf.file);
         if (!response.ok) {
           toast.error('Failed to create interview, Bad response from server');
           console.error('Failed to create interview, Bad response from server');
@@ -155,7 +156,7 @@ const Home = () => {
               Resume Upload
             </CardTitle>
             <CardDescription>
-              Select a PDF file (max 5MB) to upload your resume
+              Select a PDF file (max {MAX_FILE_SIZE_NUMBER}MB) to upload your resume
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -198,7 +199,7 @@ const Home = () => {
                         Click to upload your resume
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        PDF files only, up to 5MB
+                        PDF files only, up to {MAX_FILE_SIZE_NUMBER}MB
                       </p>
                     </div>
                     {!session && (

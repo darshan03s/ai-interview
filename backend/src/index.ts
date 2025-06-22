@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 dotenv.config();
 import express, { Request, Response } from "express";
 import cors from "cors";
-import interviewRoutes from "./routes/interviewRoutes";
+import interviewRoutes from "./routes/interviewRoutes.js";
 import { GoogleGenAI } from "@google/genai";
-import authenticate from "./middlewares/authenticate";
+import authenticate from "./middlewares/authenticate.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
