@@ -6,13 +6,18 @@ import { continueInterview, startInterview, getMessagesHistory } from "@/api";
 import type { Interview } from "@/types";
 import { SendIcon } from "lucide-react";
 
+interface Message {
+    role: "user" | "model";
+    message: string;
+}
+
 const Interview = () => {
     const [startedInterview, setStartedInterview] = useState<boolean>(false);
     const { session, authLoading } = useAuth();
     const { interviewId } = useParams();
     const [interview, setInterview] = useState<Interview | null>(null);
     const [userMessage, setUserMessage] = useState<string>("");
-    const [messagesHistory, setMessagesHistory] = useState<{ role: string; message: string }[]>([]);
+    const [messagesHistory, setMessagesHistory] = useState<Message[]>([]);
 
     const startInterviewWithAI = async () => {
         if (startedInterview) return;
@@ -134,7 +139,7 @@ const Interview = () => {
                 <h1 className="text-4xl font-bold py-4 text-center w-full">Welcome {interview?.username} to your {interview?.interview_type.toLocaleUpperCase()} interview</h1>
                 <a href={interview?.resume_url} target="_blank" className="text-sm text-blue-500 hover:text-blue-600 underline text-center w-full">See your resume</a>
                 <div
-                    className="interview-container flex-1 rounded-2xl h-full p-3 border border-border overflow-y-auto hide-scrollbar">
+                    className="interview-messages flex-1 rounded-2xl h-full p-3 border border-border overflow-y-auto hide-scrollbar">
 
                 </div>
 
@@ -149,6 +154,12 @@ const Interview = () => {
                             <button
                                 id="send-message"
                                 onClick={sendMessage}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                }}
                                 className="bg-primary text-primary-foreground p-2 w-8 h-8 flex items-center justify-center rounded-full">
                                 <SendIcon className="w-full h-full" />
                             </button>
