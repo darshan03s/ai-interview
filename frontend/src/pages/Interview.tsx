@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { continueInterview, startInterview, getMessagesHistory } from "@/api";
 import type { Interview } from "@/types";
-import { SendIcon, PlayIcon, Loader2, FileText } from "lucide-react";
+import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay } from "lucide-react";
+import { devDir } from "@/utils/devUtils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Message {
     role: "user" | "model";
@@ -22,6 +24,7 @@ const Interview = () => {
     const [userMessage, setUserMessage] = useState<string>("");
     const [messagesHistory, setMessagesHistory] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
 
     const startInterviewWithAI = async () => {
         if (startedInterview) return;
@@ -103,6 +106,9 @@ const Interview = () => {
 
             // Add the complete AI response to messages history
             const newModelMessage: Message = { role: "model", message: chunks };
+            if (autoPlayTTS) {
+                playAudioMessage(chunks);
+            }
             setMessagesHistory(prev => [...prev, newModelMessage]);
 
         } catch (error) {
@@ -151,10 +157,48 @@ const Interview = () => {
         }
     };
 
-    const playAudioMessage = (message: string) => {
-        // Placeholder for TTS functionality
-        toast.info("Audio playback feature coming soon!");
+    const playAudioMessage = async (message: string): Promise<void> => {
+        try {
+            if (!('speechSynthesis' in window)) {
+                toast.error('Text-to-speech is not supported in your browser');
+                return;
+            }
+
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            // Get available voices and prefer English
+            const voices = speechSynthesis.getVoices();
+            devDir(voices);
+            const englishVoice = voices.find(voice => voice.name.startsWith('Google UK English Male'));
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+
+            speechSynthesis.speak(utterance);
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            toast.error('Failed to play audio');
+        }
     };
+
+    const toggleAutoPlayTTS = () => {
+        if (autoPlayTTS) {
+            toast.info("Disabled auto play TTS", {
+                duration: 1500,
+            });
+        } else {
+            toast.info("Enabled auto play TTS", {
+                duration: 1500,
+            });
+        }
+        setAutoPlayTTS(!autoPlayTTS);
+    }
 
     useEffect(() => {
         if (!authLoading) {
@@ -281,17 +325,40 @@ const Interview = () => {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>Press Enter to send • Shift+Enter for new line</span>
                     </div>
-                    <button
-                        onClick={sendMessage}
-                        disabled={!userMessage.trim() || isStreamingResponse}
-                        className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
-                    >
-                        {isStreamingResponse ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <SendIcon className="h-4 w-4" />
-                        )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={toggleAutoPlayTTS}
+                                    className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                >
+                                    <CirclePlay className="h-4 w-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {autoPlayTTS ? 'Auto play TTS' : 'Disable TTS'}
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={sendMessage}
+                                    disabled={!userMessage.trim() || isStreamingResponse}
+                                    className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
+                                >
+                                    {isStreamingResponse ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <SendIcon className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                Send message
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                 </div>
             </div>
         </div>
