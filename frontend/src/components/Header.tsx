@@ -11,6 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 
 const Header = () => {
     const { session, signInWithGoogle, signOut, authLoading } = useAuth();
@@ -34,9 +35,9 @@ const Header = () => {
     };
 
     const getUserAvatar = () => {
-        return session?.user?.user_metadata?.avatar_url || 
-               session?.user?.user_metadata?.picture || 
-               `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserDisplayName())}&background=random`;
+        return session?.user?.user_metadata?.avatar_url ||
+            session?.user?.user_metadata?.picture ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserDisplayName())}&background=random`;
     };
 
     const getInitials = () => {
@@ -55,15 +56,15 @@ const Header = () => {
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo/Brand */}
                     <div className="flex items-center">
-                        <h1 className="text-xl font-bold text-foreground">
+                        <Link to="/" className="text-xl font-bold text-foreground">
                             AI Interview
-                        </h1>
+                        </Link>
                     </div>
 
                     {/* Right side - Theme toggle and Auth */}
                     <div className="flex items-center gap-3">
                         <ThemeToggleButton />
-                        
+
                         {authLoading ? (
                             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
                         ) : session ? (

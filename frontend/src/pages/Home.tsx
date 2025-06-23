@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, FileText, LogIn, AlertCircle } from "lucide-react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/components/ui/button";
@@ -11,21 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createInterview, prepareInterview } from "@/api";
+import { createInterview } from "@/api";
 import { toast } from "sonner";
-import type { PdfFile, Interview } from "@/types";
+import type { PdfFile, Interview, InterviewType } from "@/types";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const { session, signInWithGoogle, authLoading } = useAuth();
   const [selectedPdf, setSelectedPdf] = useState<PdfFile | null>(null);
-  const [showSignInModal, setShowSignInModal] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [creatingInterview, setCreatingInterview] = useState(false);
-  const [preparingInterview, setPreparingInterview] = useState(false);
+  const [creatingInterview, setCreatingInterview] = useState<boolean>(false);
   const [interview, setInterview] = useState<Interview | null>(null);
   const navigate = useNavigate();
+  const [showSelectInterview, setShowSelectInterview] = useState<boolean>(false);
+  const [selectedInterview, setSelectedInterview] = useState<InterviewType | null>(null);
 
   const MAX_FILE_SIZE_NUMBER = 2;
   const MAX_FILE_SIZE = MAX_FILE_SIZE_NUMBER * 1024 * 1024;
@@ -92,8 +93,14 @@ const Home = () => {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
-  const handleContinue = async () => {
+  useEffect(() => {
     if (selectedPdf) {
+      setShowSelectInterview(true);
+    }
+  }, [selectedPdf]);
+
+  const handleContinue = async () => {
+    if (selectedPdf && selectedInterview) {
       setCreatingInterview(true);
       const token = session?.access_token;
       const username = session?.user?.user_metadata.full_name;
@@ -102,7 +109,7 @@ const Home = () => {
         return;
       }
       try {
-        const response = await createInterview(token, username, selectedPdf.file);
+        const response = await createInterview(token, username, selectedPdf.file, selectedInterview);
         if (!response.ok) {
           toast.error('Failed to create interview, Bad response from server');
           console.error('Failed to create interview, Bad response from server');
@@ -116,53 +123,27 @@ const Home = () => {
         }
         setInterview(interviewResponse.interview);
         console.log('Interview created:', interviewResponse.interview);
-        // console.log('Continue with PDF:', selectedPdf.file.name);
       } catch (error) {
         toast.error('Failed to create interview, Error from server');
         console.error('Failed to create interview, Error from server:', error);
       } finally {
         setCreatingInterview(false);
+        setShowSelectInterview(true);
       }
     }
   };
 
-  const handlePrepareInterview = async () => {
+  useEffect(() => {
     if (interview) {
-      setPreparingInterview(true);
-      const token = session?.access_token;
-      if (!token) {
-        console.error('User not signed in');
-        return;
-      }
-      try {
-        const response = await prepareInterview(token, interview);
-        if (!response.ok) {
-          toast.error('Failed to prepare interview, Bad response from server');
-          console.error('Failed to prepare interview, Bad response from server');
-          return;
-        }
-        const interviewResponse = await response.json();
-
-        if (!interviewResponse) {
-          toast.error('Failed to prepare interview');
-          console.error('Failed to prepare interview');
-          return;
-        }
+      setTimeout(() => {
         navigate(`/interview/${interview.interview_id}`);
-
-
-      } catch (error) {
-        toast.error('Failed to prepare interview, Error from server');
-        console.error('Failed to prepare interview, Error from server:', error);
-      } finally {
-        setPreparingInterview(false);
-      }
+      }, 1000);
     }
-  };
+  }, [interview]);
 
   return (
-    <main className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <main className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto space-y-8 my-12">
         {/* Header Section */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-foreground">
@@ -257,27 +238,36 @@ const Home = () => {
           </CardContent>
         </Card>
 
+        {/* Select Interview Section */}
+        {showSelectInterview && (
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold text-center">Select Interview Type</h2>
+            <div className="options flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                className={`${selectedInterview === "technical" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
+                onClick={() => setSelectedInterview("technical")}
+              >Technical</Button>
+              <Button variant="outline"
+                className={`${selectedInterview === "techno-managerial" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
+                onClick={() => setSelectedInterview("techno-managerial")}
+              >Techno-Managerial</Button>
+            </div>
+          </div>
+        )
+        }
+
+
         {/* Continue Button */}
-        {selectedPdf && !interview && (
+        {selectedPdf && selectedInterview && (
           <div className="flex justify-center">
             <Button
               onClick={handleContinue}
               size="lg"
-              className="min-w-32"
+              className={`min-w-32 ${creatingInterview || !selectedInterview ? 'opacity-50 cursor-not-allowed!' : ''}`}
+              disabled={creatingInterview || !selectedInterview}
             >
               {creatingInterview ? 'Creating Interview...' : 'Continue'}
-            </Button>
-          </div>
-        )}
-
-        {interview && (
-          <div className="flex justify-center">
-            <Button
-              onClick={handlePrepareInterview}
-              size="lg"
-              className="min-w-32"
-            >
-              {preparingInterview ? 'Preparing Interview...' : 'Prepare Interview'}
             </Button>
           </div>
         )}

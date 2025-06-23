@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import supabase from "./supabase";
+import { Part } from "@google/genai";
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const fileId = nanoid();
@@ -17,7 +18,8 @@ export const uploadFile = async (file: Express.Multer.File) => {
 export const createInterview = async (
     user_id: string,
     username: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    interview_type: string
 ) => {
     const { data: fileData, error: fileError } = await uploadFile(file);
     if (fileError) {
@@ -38,12 +40,58 @@ export const createInterview = async (
 
     const { data, error } = await supabase
         .from("interviews")
-        .insert({ user_id, username, resume_url: signedUrlData.signedUrl })
+        .insert({ user_id, username, resume_url: signedUrlData.signedUrl, interview_type })
         .select()
         .single();
 
     if (error) {
         console.error("Error creating interview:", error);
+        return null;
+    }
+    return data;
+};
+
+export const getInterview = async (interview_id: string) => {
+    const { data, error } = await supabase
+        .from("interviews")
+        .select("*")
+        .eq("interview_id", interview_id)
+        .single();
+    if (error) {
+        console.error("Error getting interview:", error);
+        return null;
+    }
+    return data;
+};
+
+export const createMessage = async (
+    user_id: string,
+    interview_id: string,
+    message: string,
+    role: string,
+    parts: Part[]
+) => {
+    const { data, error } = await supabase
+        .from("messages")
+        .insert({ user_id, interview_id, message, role, parts })
+        .select()
+        .single();
+    if (error) {
+        console.error("Error creating message:", error);
+        return null;
+    }
+    return data;
+};
+
+export const getMessages = async (interview_id: string, user_id: string) => {
+    const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("interview_id", interview_id)
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: false }); // latest message first
+    if (error) {
+        console.error("Error getting messages:", error);
         return null;
     }
     return data;

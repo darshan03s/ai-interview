@@ -1,7 +1,9 @@
 import { Router } from "express";
 import {
     createInterviewController,
-    prepareInterviewController,
+    startInterviewController,
+    continueInterviewController,
+    getMessagesController,
 } from "../controllers/interviewControllers";
 import multer from "multer";
 
@@ -13,6 +15,8 @@ router.get("/", (req, res) => {
 });
 
 router.post("/create-interview", upload.single("file"), createInterviewController);
-router.post("/prepare-interview", prepareInterviewController);
+router.post("/start-interview", startInterviewController);
+router.post("/continue-interview", continueInterviewController);
+router.post("/get-messages", getMessagesController);
 
 export default router;

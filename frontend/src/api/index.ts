@@ -1,12 +1,15 @@
-import type { Interview } from "@/types";
-import { devLog } from "@/utils/devUtils";
-
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-export const createInterview = async (token: string, username: string, file: File) => {
+export const createInterview = async (
+    token: string,
+    username: string,
+    file: File,
+    interviewType: string
+) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("username", username);
+    formData.append("interview_type", interviewType);
     const response = await fetch(`${BASE_URL}/interview/create-interview`, {
         method: "POST",
         headers: {
@@ -18,16 +21,46 @@ export const createInterview = async (token: string, username: string, file: Fil
     return response;
 };
 
-export const prepareInterview = async (token: string, interview: Interview) => {
-    devLog("Preparing interview", interview);
-    const response = await fetch(`${BASE_URL}/interview/prepare-interview`, {
+export const startInterview = async (token: string, interviewId: string) => {
+    const response = await fetch(`${BASE_URL}/interview/start-interview`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-            interview: interview,
+            interview_id: interviewId,
+        }),
+    });
+
+    return response;
+};
+
+export const continueInterview = async (token: string, interviewId: string, message: string) => {
+    const response = await fetch(`${BASE_URL}/interview/continue-interview`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
+            message: message,
+        }),
+    });
+
+    return response;
+};
+
+export const getMessagesHistory = async (token: string, interviewId: string) => {
+    const response = await fetch(`${BASE_URL}/interview/get-messages`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
         }),
     });
 
