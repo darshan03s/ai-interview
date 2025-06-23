@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { createInterviewController } from "../controllers/interviewControllers.js";
+import {
+    createInterviewController,
+    prepareInterviewController,
+} from "../controllers/interviewControllers";
 import multer from "multer";
 
 const router = Router();
@@ -10,5 +13,6 @@ router.get("/", (req, res) => {
 });
 
 router.post("/create-interview", upload.single("file"), createInterviewController);
+router.post("/prepare-interview", prepareInterviewController);
 
 export default router;

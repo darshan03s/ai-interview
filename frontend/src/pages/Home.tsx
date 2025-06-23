@@ -11,20 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createInterview } from "@/api";
+import { createInterview, prepareInterview } from "@/api";
 import { toast } from "sonner";
-
-type PdfFile = {
-  file: File;
-  url: string;
-};
-
-type Interview = {
-  interview_id: string;
-  created_at: string;
-  user_id: string;
-  title: string;
-};
+import type { PdfFile, Interview } from "@/types";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const { session, signInWithGoogle, authLoading } = useAuth();
@@ -33,7 +23,9 @@ const Home = () => {
   const [uploadError, setUploadError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [creatingInterview, setCreatingInterview] = useState(false);
+  const [preparingInterview, setPreparingInterview] = useState(false);
   const [interview, setInterview] = useState<Interview | null>(null);
+  const navigate = useNavigate();
 
   const MAX_FILE_SIZE_NUMBER = 2;
   const MAX_FILE_SIZE = MAX_FILE_SIZE_NUMBER * 1024 * 1024;
@@ -130,6 +122,40 @@ const Home = () => {
         console.error('Failed to create interview, Error from server:', error);
       } finally {
         setCreatingInterview(false);
+      }
+    }
+  };
+
+  const handlePrepareInterview = async () => {
+    if (interview) {
+      setPreparingInterview(true);
+      const token = session?.access_token;
+      if (!token) {
+        console.error('User not signed in');
+        return;
+      }
+      try {
+        const response = await prepareInterview(token, interview);
+        if (!response.ok) {
+          toast.error('Failed to prepare interview, Bad response from server');
+          console.error('Failed to prepare interview, Bad response from server');
+          return;
+        }
+        const interviewResponse = await response.json();
+
+        if (!interviewResponse) {
+          toast.error('Failed to prepare interview');
+          console.error('Failed to prepare interview');
+          return;
+        }
+        navigate(`/interview/${interview.interview_id}`);
+
+
+      } catch (error) {
+        toast.error('Failed to prepare interview, Error from server');
+        console.error('Failed to prepare interview, Error from server:', error);
+      } finally {
+        setPreparingInterview(false);
       }
     }
   };
@@ -232,7 +258,7 @@ const Home = () => {
         </Card>
 
         {/* Continue Button */}
-        {selectedPdf && (
+        {selectedPdf && !interview && (
           <div className="flex justify-center">
             <Button
               onClick={handleContinue}
@@ -240,6 +266,18 @@ const Home = () => {
               className="min-w-32"
             >
               {creatingInterview ? 'Creating Interview...' : 'Continue'}
+            </Button>
+          </div>
+        )}
+
+        {interview && (
+          <div className="flex justify-center">
+            <Button
+              onClick={handlePrepareInterview}
+              size="lg"
+              className="min-w-32"
+            >
+              {preparingInterview ? 'Preparing Interview...' : 'Prepare Interview'}
             </Button>
           </div>
         )}

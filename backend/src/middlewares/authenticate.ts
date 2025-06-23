@@ -1,4 +1,4 @@
-import supabase from "../supabase/supabase.js";
+import supabase from "../supabase/supabase";
 import { Request, Response, NextFunction } from "express";
 
 export default async function authenticate(req: Request, res: Response, next: NextFunction) {

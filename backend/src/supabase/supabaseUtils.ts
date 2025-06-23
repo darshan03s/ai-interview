@@ -1,5 +1,5 @@
-import supabase from "./supabase.js";
 import { nanoid } from "nanoid";
+import supabase from "./supabase";
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const fileId = nanoid();

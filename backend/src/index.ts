@@ -1,10 +1,9 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: true });
 import express, { Request, Response } from "express";
 import cors from "cors";
-import interviewRoutes from "./routes/interviewRoutes.js";
-import { GoogleGenAI } from "@google/genai";
-import authenticate from "./middlewares/authenticate.js";
+import interviewRoutes from "./routes/interviewRoutes";
+import authenticate from "./middlewares/authenticate";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,14 +12,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-export let ai: GoogleGenAI;
-
-try {
-    ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-} catch (error) {
-    console.error("Error initializing AI:", error);
+if (!process.env.GEMINI_API_KEY) {
+    console.error("FATAL ERROR: GEMINI_API_KEY environment variable is not set.");
+    console.log("Please ensure it is present in your .env file.");
+    process.exit(1);
+} else {
+    console.log("GEMINI_API_KEY is set");
 }
 
 app.get("/", (req: Request, res: Response) => {
