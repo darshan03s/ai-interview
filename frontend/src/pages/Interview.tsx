@@ -1,10 +1,10 @@
 import { useAuth } from "@/features/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { continueInterview, startInterview, getMessagesHistory } from "@/api";
 import type { Interview } from "@/types";
-import { SendIcon } from "lucide-react";
+import { SendIcon, PlayIcon, Loader2, FileText } from "lucide-react";
 
 interface Message {
     role: "user" | "model";
@@ -13,14 +13,19 @@ interface Message {
 
 const Interview = () => {
     const [startedInterview, setStartedInterview] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isStreamingResponse, setIsStreamingResponse] = useState<boolean>(false);
+    const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
     const { session, authLoading } = useAuth();
     const { interviewId } = useParams();
     const [interview, setInterview] = useState<Interview | null>(null);
     const [userMessage, setUserMessage] = useState<string>("");
     const [messagesHistory, setMessagesHistory] = useState<Message[]>([]);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const startInterviewWithAI = async () => {
         if (startedInterview) return;
+        setIsLoading(true);
         const token = session?.access_token;
         if (!token) {
             console.error('User not signed in');
@@ -47,34 +52,45 @@ const Interview = () => {
             console.error('Failed to prepare interview, Error from server:', error);
         } finally {
             setStartedInterview(true);
+            setIsLoading(false);
         }
     };
 
     const sendMessage = async () => {
-        if (!userMessage) return;
+        if (!userMessage.trim()) return;
         const token = session?.access_token;
         if (!token) {
             console.error('User not signed in');
             return;
         }
+
+        // Add user message to history immediately
+        const newUserMessage: Message = { role: "user", message: userMessage };
+        setMessagesHistory(prev => [...prev, newUserMessage]);
+        const currentMessage = userMessage;
         setUserMessage("");
+        setIsStreamingResponse(true);
+        setCurrentStreamingMessage("");
 
         try {
-            const response = await continueInterview(token, interviewId!, userMessage);
+            const response = await continueInterview(token, interviewId!, currentMessage);
 
             if (!response.ok) {
                 toast.error("Error sending prompt");
+                setIsStreamingResponse(false);
+                return;
             }
 
             const reader = response.body?.getReader();
             if (!reader) {
                 toast.error("ReadableStream not supported");
+                setIsStreamingResponse(false);
                 return;
             }
 
             const decoder = new TextDecoder();
-
             let chunks = "";
+
             while (true) {
                 const { done, value } = await reader.read();
 
@@ -82,12 +98,19 @@ const Interview = () => {
 
                 const chunk = decoder.decode(value, { stream: true });
                 chunks += chunk;
+                setCurrentStreamingMessage(chunks);
             }
 
-            console.log(chunks);
+            // Add the complete AI response to messages history
+            const newModelMessage: Message = { role: "model", message: chunks };
+            setMessagesHistory(prev => [...prev, newModelMessage]);
+
         } catch (error) {
             toast.error('Failed to send message, Error from server');
             console.error('Failed to send message, Error from server:', error);
+        } finally {
+            setIsStreamingResponse(false);
+            setCurrentStreamingMessage("");
         }
     }
 
@@ -121,6 +144,18 @@ const Interview = () => {
         }
     }
 
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    const playAudioMessage = (message: string) => {
+        // Placeholder for TTS functionality
+        toast.info("Audio playback feature coming soon!");
+    };
+
     useEffect(() => {
         if (!authLoading) {
             startInterviewWithAI();
@@ -131,44 +166,136 @@ const Interview = () => {
         if (startedInterview && messagesHistory.length === 0) {
             getMessages();
         }
-    }, []);
+    }, [startedInterview]);
 
-    if (startedInterview) {
+    if (isLoading || !startedInterview) {
         return (
-            <div className="max-w-4xl mx-auto h-[600px] flex flex-col gap-4">
-                <h1 className="text-4xl font-bold py-4 text-center w-full">Welcome {interview?.username} to your {interview?.interview_type.toLocaleUpperCase()} interview</h1>
-                <a href={interview?.resume_url} target="_blank" className="text-sm text-blue-500 hover:text-blue-600 underline text-center w-full">See your resume</a>
-                <div
-                    className="interview-messages flex-1 rounded-2xl h-full p-3 border border-border overflow-y-auto hide-scrollbar">
-
+            <div className="max-w-4xl mx-auto min-h-[600px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Preparing your interview...</p>
                 </div>
+            </div>
+        );
+    }
 
-                <div className="flex flex-col gap-2 border border-border rounded-2xl">
+    return (
+        <div className="max-w-4xl mx-auto  flex flex-col gap-4 py-2">
+            <a
+                href={interview?.resume_url}
+                target="_blank"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
+            >
+                <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                View your resume
+            </a>
+            {/* Messages Container */}
+            <div className="bg-card h-[400px] rounded-2xl ring-1 ring-border shadow-sm overflow-hidden">
+                <div className="h-full overflow-y-auto hide-scrollbar p-4 space-y-4">
+                    {messagesHistory.length === 0 && !isStreamingResponse ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-muted-foreground">
+                                <p className="text-lg font-medium">Your interview will begin shortly...</p>
+                                <p className="text-sm">AI is preparing questions based on your resume</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {messagesHistory.map((message, index) => (
+                                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    {message.role === 'model' && (
+                                        <div className="flex items-start gap-3 max-w-[80%]">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                AI
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                        {message.message}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => playAudioMessage(message.message)}
+                                                    className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                                >
+                                                    <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
+                                                    Play audio
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {message.role === 'user' && (
+                                        <div className="flex items-start gap-3 max-w-[80%]">
+                                            <div className="flex flex-col gap-2">
+                                                <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
+                                                    <p className="whitespace-pre-wrap leading-relaxed">
+                                                        {message.message}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
+                                                {interview?.username?.[0]?.toUpperCase() || 'U'}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Streaming Response */}
+                            {isStreamingResponse && (
+                                <div className="flex justify-start">
+                                    <div className="flex items-start gap-3 max-w-[80%]">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                            AI
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                    {currentStreamingMessage}
+                                                    <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+            </div>
+
+            {/* Input Section */}
+            <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden">
+                <div className="p-4">
                     <textarea
                         value={userMessage}
                         onChange={(e) => setUserMessage(e.target.value)}
-                        id="user-message" className="w-full rounded-2xl p-3 resize-none flex-1 focus:outline-none focus:border-none"></textarea>
-                    <div className="actions w-full h-[50px] flex items-center justify-between px-2">
-                        <div className="actions-left"></div>
-                        <div className="actions-right">
-                            <button
-                                id="send-message"
-                                onClick={sendMessage}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
-                                        e.preventDefault();
-                                        sendMessage();
-                                    }
-                                }}
-                                className="bg-primary text-primary-foreground p-2 w-8 h-8 flex items-center justify-center rounded-full">
-                                <SendIcon className="w-full h-full" />
-                            </button>
-                        </div>
+                        onKeyDown={handleKeyPress}
+                        placeholder="Type your answer here..."
+                        className="w-full bg-transparent resize-none outline-none placeholder:text-muted-foreground min-h-[60px] max-h-[120px] leading-relaxed"
+                        disabled={isStreamingResponse}
+                    />
+                </div>
+                <div className="px-4 pb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Press Enter to send • Shift+Enter for new line</span>
                     </div>
+                    <button
+                        onClick={sendMessage}
+                        disabled={!userMessage.trim() || isStreamingResponse}
+                        className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                        {isStreamingResponse ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <SendIcon className="h-4 w-4" />
+                        )}
+                    </button>
                 </div>
             </div>
-        )
-    }
+        </div>
+    );
+};
 
-}
-export default Interview
+export default Interview;

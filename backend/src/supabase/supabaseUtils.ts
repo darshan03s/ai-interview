@@ -89,7 +89,7 @@ export const getMessages = async (interview_id: string, user_id: string) => {
         .select("*")
         .eq("interview_id", interview_id)
         .eq("user_id", user_id)
-        .order("created_at", { ascending: false }); // latest message first
+        .order("created_at", { ascending: true });
     if (error) {
         console.error("Error getting messages:", error);
         return null;

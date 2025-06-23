@@ -6,6 +6,7 @@ import {
     getMessages,
 } from "../supabase/supabaseUtils";
 import { GoogleGenAI } from "@google/genai";
+import { systemPrompt } from "../llm/prompts";
 
 export async function createInterviewController(req: Request, res: Response) {
     const { username, interview_type } = req.body;
@@ -153,8 +154,7 @@ export async function continueInterviewController(req: Request, res: Response) {
             model: "gemini-2.5-flash",
             contents: messages,
             config: {
-                systemInstruction:
-                    "You are Interview Assistant, you are helping the user to prepare for their interview. You are given user's resume, your job is to ask questions from their resume and their selected interview. Keep the questions relevant to the interview and the resume. Start immediately, dont say stuff like 'I will help you prepare...'",
+                systemInstruction: systemPrompt,
                 maxOutputTokens: 1_000_000,
                 temperature: 0.5,
                 thinkingConfig: {
@@ -210,7 +210,6 @@ export async function getMessagesController(req: Request, res: Response) {
         });
 
         messagesHistory = messagesHistory.slice(1);
-        console.log(messagesHistory);
 
         res.status(200).json({
             message: "Messages fetched successfully",
