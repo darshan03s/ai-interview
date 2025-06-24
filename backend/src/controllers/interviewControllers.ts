@@ -151,8 +151,6 @@ export async function continueInterviewController(req: Request, res: Response) {
             },
         ]);
 
-        console.log(messages);
-
         const stream = await gemini.models.generateContentStream({
             model: "gemini-2.5-flash",
             contents: messages,

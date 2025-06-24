@@ -2,7 +2,7 @@ import { useAuth } from "@/features/auth";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
-import { continueInterview, startInterview, getMessagesHistory } from "@/api";
+import { continueInterview, startInterview, getMessagesHistory, spellCheck } from "@/api";
 import type { Interview } from "@/types";
 import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
@@ -26,6 +26,14 @@ const Interview = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+    const [spellChecking, setSpellChecking] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messagesHistory]);
+
 
     const startInterviewWithAI = async () => {
         if (startedInterview) return;
@@ -195,10 +203,37 @@ const Interview = () => {
         setAutoPlayTTS(!autoPlayTTS);
     }
 
-    const spellCheck = () => {
-        toast.info("Spell check coming soon", {
-            duration: 1500,
-        });
+    const aiSpellCheck = async () => {
+        const token = session?.access_token;
+        if (!token) {
+            console.error('User not signed in');
+            return;
+        }
+
+        setSpellChecking(true);
+        try {
+            const response = await spellCheck(token, userMessage);
+            if (!response.ok) {
+                toast.error('Failed to spell check');
+                console.error('Failed to spell check');
+                return;
+            }
+
+            const spellCheckResponse = await response.json();
+
+            if (!spellCheckResponse) {
+                toast.error('Failed to spell check');
+                console.error('Failed to spell check');
+                return;
+            }
+
+            setUserMessage(spellCheckResponse.text);
+        } catch (error) {
+            toast.error('Failed to spell check');
+            console.error('Failed to spell check', error);
+        } finally {
+            setSpellChecking(false);
+        }
     }
 
     useEffect(() => {
@@ -388,10 +423,15 @@ const Interview = () => {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
-                                    onClick={spellCheck}
-                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                    onClick={aiSpellCheck}
+                                    disabled={spellChecking}
+                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 ${spellChecking ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <SpellCheck className="h-4 w-4" />
+                                    {spellChecking ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <SpellCheck className="h-4 w-4" />
+                                    )}
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -417,7 +457,7 @@ const Interview = () => {
                                 <button
                                     onClick={sendMessage}
                                     disabled={!userMessage.trim() || isStreamingResponse}
-                                    className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
+                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 ${isStreamingResponse ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isStreamingResponse ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />

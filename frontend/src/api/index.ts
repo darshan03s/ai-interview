@@ -109,3 +109,18 @@ export const renameInterview = async (token: string, interviewId: string, newNam
 
     return response;
 };
+
+export const spellCheck = async (token: string, text: string) => {
+    const response = await fetch(`${BASE_URL}/spell-check`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            text: text,
+        }),
+    });
+
+    return response;
+};

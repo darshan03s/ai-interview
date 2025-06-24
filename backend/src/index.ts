@@ -3,6 +3,7 @@ dotenv.config({ override: true });
 import express, { Request, Response } from "express";
 import cors from "cors";
 import interviewRoutes from "./routes/interviewRoutes";
+import spellCheckRoutes from "./routes/spellCheckRoutes";
 import authenticate from "./middlewares/authenticate";
 
 const app = express();
@@ -25,6 +26,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/interview", authenticate, interviewRoutes);
+app.use("/spell-check", authenticate, spellCheckRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running at ${PORT}`);
