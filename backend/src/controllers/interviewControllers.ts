@@ -4,6 +4,9 @@ import {
     createMessage,
     getInterview,
     getMessages,
+    getInterviews,
+    deleteInterview,
+    renameInterview,
 } from "../supabase/supabaseUtils";
 import { GoogleGenAI } from "@google/genai";
 import { systemPrompt } from "../llm/prompts";
@@ -218,6 +221,71 @@ export async function getMessagesController(req: Request, res: Response) {
     } catch (error) {
         console.error("Error getting messages:", error);
         res.status(500).json({ message: "Error getting messages" });
+        return;
+    }
+}
+
+export async function getInterviewsController(req: Request, res: Response) {
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        const interviews = await getInterviews(user.id);
+        res.status(200).json({
+            message: "Interviews fetched successfully",
+            interviews: interviews,
+        });
+    } catch (error) {
+        console.error("Error getting interviews:", error);
+        res.status(500).json({ message: "Error getting interviews" });
+    }
+}
+
+export async function deleteInterviewController(req: Request, res: Response) {
+    const { interview_id } = req.body;
+    if (!interview_id) {
+        res.status(400).json({ message: "Interview ID is required" });
+        return;
+    }
+
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        await deleteInterview(interview_id);
+        res.status(200).json({ message: "Interview deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting interview:", error);
+        res.status(500).json({ message: "Error deleting interview" });
+        return;
+    }
+}
+
+export async function renameInterviewController(req: Request, res: Response) {
+    const { interview_id, new_name } = req.body;
+    if (!interview_id || !new_name) {
+        res.status(400).json({ message: "Interview ID and new name are required" });
+        return;
+    }
+
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        await renameInterview(interview_id, new_name);
+        res.status(200).json({ message: "Interview renamed successfully" });
+    } catch (error) {
+        console.error("Error renaming interview:", error);
+        res.status(500).json({ message: "Error renaming interview" });
         return;
     }
 }

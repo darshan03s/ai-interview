@@ -135,14 +135,19 @@ const Home = () => {
 
   useEffect(() => {
     if (interview) {
-      setTimeout(() => {
-        navigate(`/interview/${interview.interview_id}`);
-      }, 1000);
+      navigate(`/interview/${interview.interview_id}`);
     }
   }, [interview]);
 
+  useEffect(() => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, [showSelectInterview, selectedInterview, creatingInterview]);
+
   return (
-    <main className="min-h-screen bg-background">
+    <main className="bg-background">
       <div className="max-w-4xl mx-auto space-y-8 my-12">
         {/* Header Section */}
         <div className="text-center space-y-4">

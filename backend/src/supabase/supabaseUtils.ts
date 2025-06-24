@@ -96,3 +96,36 @@ export const getMessages = async (interview_id: string, user_id: string) => {
     }
     return data;
 };
+
+export const deleteInterview = async (interview_id: string) => {
+    const { data, error } = await supabase
+        .from("interviews")
+        .delete()
+        .eq("interview_id", interview_id);
+    if (error) {
+        console.error("Error deleting interview:", error);
+        return null;
+    }
+    return data;
+};
+
+export const renameInterview = async (interview_id: string, new_name: string) => {
+    const { data, error } = await supabase
+        .from("interviews")
+        .update({ title: new_name })
+        .eq("interview_id", interview_id);
+    if (error) {
+        console.error("Error renaming interview:", error);
+        return null;
+    }
+    return data;
+};
+
+export const getInterviews = async (user_id: string) => {
+    const { data, error } = await supabase.from("interviews").select("*").eq("user_id", user_id);
+    if (error) {
+        console.error("Error getting interviews:", error);
+        return null;
+    }
+    return data;
+};

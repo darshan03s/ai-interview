@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
+import Sidebar from "./Sidebar";
 
 const Header = () => {
     const { session, signInWithGoogle, signOut, authLoading } = useAuth();
@@ -55,7 +56,8 @@ const Header = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo/Brand */}
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-4">
+                        <Sidebar />
                         <Link to="/" className="text-xl font-bold text-foreground">
                             AI Interview
                         </Link>

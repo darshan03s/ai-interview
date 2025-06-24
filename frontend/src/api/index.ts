@@ -66,3 +66,46 @@ export const getMessagesHistory = async (token: string, interviewId: string) => 
 
     return response;
 };
+
+export const getInterviews = async (token: string) => {
+    const response = await fetch(`${BASE_URL}/interview/get-interviews`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    return response;
+};
+
+export const deleteInterview = async (token: string, interviewId: string) => {
+    const response = await fetch(`${BASE_URL}/interview/delete-interview`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
+        }),
+    });
+
+    return response;
+};
+
+export const renameInterview = async (token: string, interviewId: string, newName: string) => {
+    const response = await fetch(`${BASE_URL}/interview/rename-interview`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
+            new_name: newName,
+        }),
+    });
+
+    return response;
+};
