@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { continueInterview, startInterview, getMessagesHistory, spellCheck } from "@/api";
 import type { Interview } from "@/types";
-import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck } from "lucide-react";
+import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck, Mic } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -27,6 +27,9 @@ const Interview = () => {
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
     const [spellChecking, setSpellChecking] = useState<boolean>(false);
+    const [isRecording, setIsRecording] = useState<boolean>(false);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const finalTranscriptRef = useRef<string>('');
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -210,6 +213,11 @@ const Interview = () => {
             return;
         }
 
+        if (!userMessage.trim()) {
+            toast.error('Please enter a message to spell check');
+            return;
+        }
+
         setSpellChecking(true);
         try {
             const response = await spellCheck(token, userMessage);
@@ -235,6 +243,133 @@ const Interview = () => {
             setSpellChecking(false);
         }
     }
+
+    const handleVoiceInput = async () => {
+        try {
+            if (isRecording && recognitionRef.current) {
+                recognitionRef.current.stop();
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                toast.error('Speech recognition is not supported in your browser');
+                return;
+            }
+
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (error) {
+                toast.error('Microphone permission denied. Please allow microphone access.');
+                console.error('Microphone permission denied:', error);
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognitionRef.current = recognition;
+            finalTranscriptRef.current = '';
+
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            toast.info('Listening... Press Shift+R or click mic to stop', {
+                duration: 1000,
+            });
+
+            recognition.onstart = () => {
+                setIsRecording(true);
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+
+                    if (event.results[i].isFinal) {
+                        finalTranscriptRef.current += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update the textarea with current transcript
+                setUserMessage(finalTranscriptRef.current + interimTranscript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
+                recognitionRef.current = null;
+
+                switch (event.error) {
+                    case 'audio-capture':
+                        toast.error('Microphone not accessible. Please check permissions.');
+                        break;
+                    case 'not-allowed':
+                        toast.error('Microphone permission denied.');
+                        break;
+                    default:
+                        toast.error(`Speech recognition error: ${event.error}`);
+                }
+            };
+
+            recognition.onend = () => {
+                setIsRecording(false);
+                recognitionRef.current = null;
+
+                const finalText = finalTranscriptRef.current.trim();
+                if (finalText) {
+                    setUserMessage(finalText);
+                }
+
+                finalTranscriptRef.current = '';
+            };
+
+            recognition.start();
+
+        } catch (error) {
+            console.error('Error with voice input:', error);
+            toast.error('Failed to start voice input');
+            setIsRecording(false);
+            recognitionRef.current = null;
+        }
+    }
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+                recognitionRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            if (e.shiftKey && e.key.toLowerCase() === 'r') {
+                e.preventDefault();
+                handleVoiceInput();
+            }
+
+            if (e.shiftKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                aiSpellCheck();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
 
     useEffect(() => {
         if (!authLoading) {
@@ -423,9 +558,23 @@ const Interview = () => {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
+                                    onClick={handleVoiceInput}
+                                    disabled={isStreamingResponse}
+                                    className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                >
+                                    <Mic className="h-4 w-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {isRecording ? 'Stop recording (Shift+R)' : 'Start recording (Shift+R)'}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
                                     onClick={aiSpellCheck}
-                                    disabled={spellChecking}
-                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 ${spellChecking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={!userMessage.trim() || spellChecking}
+                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                 >
                                     {spellChecking ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -435,7 +584,7 @@ const Interview = () => {
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                Spell check
+                                Spell check (Shift+S)
                             </TooltipContent>
                         </Tooltip>
                         <Tooltip>
@@ -448,7 +597,7 @@ const Interview = () => {
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                {autoPlayTTS ? 'Auto play TTS' : 'Disable TTS'}
+                                {autoPlayTTS ? 'Disable TTS' : 'Enable TTS'}
                             </TooltipContent>
                         </Tooltip>
 
@@ -457,7 +606,7 @@ const Interview = () => {
                                 <button
                                     onClick={sendMessage}
                                     disabled={!userMessage.trim() || isStreamingResponse}
-                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 ${isStreamingResponse ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                 >
                                     {isStreamingResponse ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
