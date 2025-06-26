@@ -11,6 +11,7 @@ import {
     createReport,
     updateReport,
     uploadReport,
+    updateInterview,
 } from "../supabase/supabaseUtils";
 import gemini from "../llm/gemini";
 import { systemPrompt } from "../llm/prompts";
@@ -109,23 +110,28 @@ export async function startInterviewController(req: Request, res: Response) {
 export async function continueInterviewController(req: Request, res: Response) {
     const { interview_id, message } = req.body;
     if (!interview_id) {
-        res.status(400).json({ message: "Interview ID is required" });
+        res.status(400).json({ errorMessage: "Interview ID is required" });
         return;
     }
     if (!message) {
-        res.status(400).json({ message: "Message is required" });
+        res.status(400).json({ errorMessage: "Message is required" });
         return;
     }
 
     const user = req.user;
     if (!user) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ errorMessage: "Unauthorized" });
         return;
     }
 
     const interview = await getInterview(user.id, interview_id);
     if (!interview) {
-        res.status(404).json({ message: "Interview not found" });
+        res.status(404).json({ errorMessage: "Interview not found" });
+        return;
+    }
+
+    if (interview.is_completed) {
+        res.status(400).json({ errorMessage: "Interview is already completed" });
         return;
     }
 
@@ -133,7 +139,7 @@ export async function continueInterviewController(req: Request, res: Response) {
         const messagesHistory = await getMessages(interview_id, user.id);
         const messages: Message[] = [];
         if (!messagesHistory) {
-            res.status(500).json({ message: "Error getting messages" });
+            res.status(500).json({ errorMessage: "Error getting messages" });
             return;
         }
         messagesHistory.forEach((message) => {
@@ -183,6 +189,13 @@ export async function continueInterviewController(req: Request, res: Response) {
         await createMessage(user.id, interview_id, modelReplyRaw, "model", [
             { text: modelReplyRaw },
         ]);
+        if (
+            modelReplyRaw.includes(
+                "Thank you for your time, we will get back to you with the results."
+            )
+        ) {
+            await updateInterview(user.id, interview_id, true);
+        }
     } catch (error) {
         console.error("Error preparing interview:", error);
         res.status(500).json({ message: "Error preparing interview" });

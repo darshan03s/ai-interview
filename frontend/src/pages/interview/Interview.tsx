@@ -1,24 +1,25 @@
 import { useAuth } from "@/features/auth";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { useParams } from "react-router-dom";
 import { continueInterview, startInterview, getMessagesHistory, spellCheck } from "@/api";
 import type { InterviewType, MessageType } from "@/types";
 import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck, Mic } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Report from "./components/Report";
+import { useParams } from "react-router-dom";
 
 const Interview = () => {
+    const { interviewId } = useParams();
     const [startedInterview, setStartedInterview] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isStreamingResponse, setIsStreamingResponse] = useState<boolean>(false);
     const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
     const { session, authLoading } = useAuth();
-    const { interviewId } = useParams();
     const [interview, setInterview] = useState<InterviewType | null>(null);
     const [userMessage, setUserMessage] = useState<string>("");
     const [messagesHistory, setMessagesHistory] = useState<MessageType[]>([]);
+    const [fetchingMessages, setFetchingMessages] = useState<boolean>(false);
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
     const [spellChecking, setSpellChecking] = useState<boolean>(false);
@@ -62,6 +63,10 @@ const Interview = () => {
 
     const sendMessage = async () => {
         if (!userMessage.trim()) return;
+        if (interview?.is_completed) {
+            toast.info("Interview is already completed");
+            return;
+        }
         const token = session?.access_token;
         if (!token) {
             console.error('User not signed in');
@@ -85,32 +90,43 @@ const Interview = () => {
                 return;
             }
 
-            const reader = response.body?.getReader();
-            if (!reader) {
-                toast.error("ReadableStream not supported");
+            try {
+                const reader = response.body?.getReader();
+                if (!reader) {
+                    toast.error("ReadableStream not supported");
+                    setIsStreamingResponse(false);
+                    return;
+                }
+
+                const decoder = new TextDecoder();
+                let chunks = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    chunks += chunk;
+                    setCurrentStreamingMessage(chunks);
+                }
+
+                // Add the complete AI response to messages history
+                const newModelMessage: MessageType = { role: "model", message: chunks };
+                if (autoPlayTTS) {
+                    playAudioMessage(chunks);
+                }
+                setMessagesHistory(prev => [...prev, newModelMessage]);
+            } catch (error) {
+                const resJson = await response.json();
+                if (resJson.errorMessage) {
+                    toast.error(resJson.errorMessage);
+                    console.error('Failed to send message, Error from server:', resJson.errorMessage, error);
+                }
+            } finally {
                 setIsStreamingResponse(false);
-                return;
+                setCurrentStreamingMessage("");
             }
-
-            const decoder = new TextDecoder();
-            let chunks = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                chunks += chunk;
-                setCurrentStreamingMessage(chunks);
-            }
-
-            // Add the complete AI response to messages history
-            const newModelMessage: MessageType = { role: "model", message: chunks };
-            if (autoPlayTTS) {
-                playAudioMessage(chunks);
-            }
-            setMessagesHistory(prev => [...prev, newModelMessage]);
 
         } catch (error) {
             toast.error('Failed to send message, Error from server');
@@ -129,6 +145,7 @@ const Interview = () => {
         }
 
         try {
+            setFetchingMessages(true);
             const response = await getMessagesHistory(token, interviewId!);
             if (!response.ok) {
                 toast.error('Failed to get messages, Bad response from server');
@@ -148,6 +165,8 @@ const Interview = () => {
         } catch (error) {
             toast.error('Failed to get messages, Error from server');
             console.error('Failed to get messages, Error from server:', error);
+        } finally {
+            setFetchingMessages(false);
         }
     }
 
@@ -196,6 +215,10 @@ const Interview = () => {
     }
 
     const aiSpellCheck = async () => {
+        if (interview?.is_completed) {
+            toast.info("Interview is already completed");
+            return;
+        }
         const token = session?.access_token;
         if (!token) {
             console.error('User not signed in');
@@ -234,6 +257,10 @@ const Interview = () => {
     }
 
     const handleVoiceInput = async () => {
+        if (interview?.is_completed) {
+            toast.info("Interview is already completed");
+            return;
+        }
         try {
             if (isRecording && recognitionRef.current) {
                 recognitionRef.current.stop();
@@ -334,7 +361,7 @@ const Interview = () => {
                 recognitionRef.current = null;
             }
         };
-    }, []);
+    }, [interviewId]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -358,21 +385,25 @@ const Interview = () => {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [interviewId]);
 
     useEffect(() => {
-        if (!authLoading) {
+        if (!authLoading && interviewId) {
             startInterviewWithAI();
         }
-    }, [authLoading]);
+    }, [authLoading, interviewId]);
 
     useEffect(() => {
-        if (startedInterview && messagesHistory.length === 0) {
+        if (startedInterview && messagesHistory.length === 0 && interviewId) {
             getMessages();
         }
-    }, [startedInterview]);
+    }, [startedInterview, interviewId]);
 
     useEffect(() => {
+        if (interview?.is_completed) {
+            toast.info("Interview is already completed");
+            return;
+        }
         const initializeVoice = () => {
             try {
                 if (!('speechSynthesis' in window)) {
@@ -423,7 +454,7 @@ const Interview = () => {
             <div className="max-w-4xl mx-auto min-h-[600px] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Preparing your interview...</p>
+                    <p className="text-muted-foreground">Loading...</p>
                 </div>
             </div>
         );
@@ -450,58 +481,69 @@ const Interview = () => {
                                 <div className="flex items-center justify-center h-full">
                                     <div className="text-center text-muted-foreground">
                                         <p className="text-lg font-medium">Your interview will begin shortly...</p>
-                                        <p className="text-sm">AI is preparing questions based on your resume</p>
                                     </div>
                                 </div>
                             ) : (
                                 <>
-                                    {messagesHistory.length === 0
-                                        ?
-                                        <div className="flex items-center justify-center h-full">
-                                            <div className="text-center text-muted-foreground">
-                                                <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
-                                            </div>
-                                        </div>
-                                        :
-                                        messagesHistory.map((message, index) => (
-                                            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                {message.role === 'model' && (
-                                                    <div className="flex items-start gap-3 max-w-[80%]">
-                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                                                            AI
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
-                                                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                                                    {message.message}
-                                                                </p>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => playAudioMessage(message.message)}
-                                                                className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
-                                                            >
-                                                                <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
-                                                                Play audio
-                                                            </button>
-                                                        </div>
+                                    {
+                                        // messagesHistory.length === 0
+                                        //     ?
+                                        //     <div className="flex items-center justify-center h-full">
+                                        //         <div className="text-center text-muted-foreground">
+                                        //             <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
+                                        //         </div>
+                                        //     </div>
+                                        fetchingMessages ?
+                                            <div className="flex items-center justify-center h-full">
+                                                <div className="text-center text-muted-foreground">
+                                                    <p className="text-lg font-medium">Loading...</p>
+                                                </div>
+                                            </div> : !fetchingMessages && messagesHistory.length === 0 ?
+                                                <div className="flex items-center justify-center h-full">
+                                                    <div className="text-center text-muted-foreground">
+                                                        <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
                                                     </div>
-                                                )}
-                                                {message.role === 'user' && (
-                                                    <div className="flex items-start gap-3 max-w-[80%]">
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
-                                                                <p className="whitespace-pre-wrap leading-relaxed">
-                                                                    {message.message}
-                                                                </p>
+                                                </div>
+                                                :
+                                                messagesHistory.map((message, index) => (
+                                                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                        {message.role === 'model' && (
+                                                            <div className="flex items-start gap-3 max-w-[80%]">
+                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                                    AI
+                                                                </div>
+                                                                <div className="flex flex-col gap-2">
+                                                                    <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                                            {message.message}
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => playAudioMessage(message.message)}
+                                                                        className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                                                    >
+                                                                        <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
+                                                                        Play audio
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
-                                                            {interview?.username?.[0]?.toUpperCase() || 'U'}
-                                                        </div>
+                                                        )}
+                                                        {message.role === 'user' && (
+                                                            <div className="flex items-start gap-3 max-w-[80%]">
+                                                                <div className="flex flex-col gap-2">
+                                                                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
+                                                                        <p className="whitespace-pre-wrap leading-relaxed">
+                                                                            {message.message}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
+                                                                    {interview?.username?.[0]?.toUpperCase() || 'U'}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))
+                                                ))
 
                                     }
 
@@ -550,8 +592,8 @@ const Interview = () => {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={handleVoiceInput}
-                                        disabled={isStreamingResponse}
-                                        className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                        disabled={isStreamingResponse || interview?.is_completed}
+                                        className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                     >
                                         <Mic className="h-4 w-4" />
                                     </button>
@@ -564,7 +606,7 @@ const Interview = () => {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={aiSpellCheck}
-                                        disabled={!userMessage.trim() || spellChecking}
+                                        disabled={!userMessage.trim() || spellChecking || interview?.is_completed}
                                         className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                     >
                                         {spellChecking ? (
@@ -582,7 +624,8 @@ const Interview = () => {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={toggleAutoPlayTTS}
-                                        className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                        disabled={interview?.is_completed}
+                                        className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                     >
                                         <CirclePlay className="h-4 w-4" />
                                     </button>
@@ -596,7 +639,7 @@ const Interview = () => {
                                 <TooltipTrigger asChild>
                                     <button
                                         onClick={sendMessage}
-                                        disabled={!userMessage.trim() || isStreamingResponse}
+                                        disabled={!userMessage.trim() || isStreamingResponse || interview?.is_completed}
                                         className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                                     >
                                         {isStreamingResponse ? (

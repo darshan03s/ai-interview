@@ -19,7 +19,7 @@ const Sidebar = () => {
     const [interviews, setInterviews] = useState<InterviewType[]>([])
     const [renameDialogOpen, setRenameDialogOpen] = useState(false)
     const { session, authLoading } = useAuth()
-    const params = useParams()
+    const { interviewId } = useParams()
     const [renameInput, setRenameInput] = useState<string>('')
     const [renamingInterview, setRenamingInterview] = useState<boolean>(false)
     const [deletingInterview, setDeletingInterview] = useState<boolean>(false)
@@ -74,7 +74,7 @@ const Sidebar = () => {
             setInterviews(data.interviews)
         };
         fetchInterviews();
-    }, [authLoading, params]);
+    }, [authLoading, interviewId]);
 
     return (
         <Sheet>
@@ -93,8 +93,10 @@ const Sidebar = () => {
                         </div>
                     )}
                     {interviews.map((interview, index) => (
-                        <div key={index} className='history-item group flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 transition-colors duration-200'>
-                            <Link to={`/interview/${interview.interview_id}`} className='font-medium text-foreground hover:text-primary transition-colors flex-1 min-w-0'>
+                        <div key={index} className={`history-item group flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 transition-colors duration-200 ${interviewId && interviewId === interview.interview_id ? 'bg-accent/50 dark:bg-accent/50 text-primary dark:text-primary' : ''}`}>
+                            <Link
+                                to={`/interview/${interview.interview_id}`}
+                                className={`font-medium text-foreground hover:text-primary transition-colors flex-1 min-w-0 `}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span className='truncate block'>

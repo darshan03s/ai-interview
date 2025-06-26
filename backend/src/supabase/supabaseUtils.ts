@@ -74,6 +74,23 @@ export const getInterview = async (user_id: string, interview_id: string) => {
     return data;
 };
 
+export const updateInterview = async (
+    user_id: string,
+    interview_id: string,
+    is_completed: boolean
+) => {
+    const { data, error } = await supabase
+        .from("interviews")
+        .update({ is_completed })
+        .eq("user_id", user_id)
+        .eq("interview_id", interview_id);
+    if (error) {
+        console.error("Error updating interview:", error);
+        return null;
+    }
+    return data;
+};
+
 export const createMessage = async (
     user_id: string,
     interview_id: string,
