@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/vite.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Vite + React + TS</title>
+        <title>InterviewBot</title>
         <style>
             html:not(.loaded) {
                 transition: none !important;
@@ -13,7 +13,6 @@
     </head>
     <body>
         <div id="root"></div>
-        <script type="module" src="/src/main.tsx"></script>
         <script>
             (function () {
                 const root = window.document.documentElement;
@@ -22,9 +21,8 @@
                     root.classList.remove("light", "dark");
 
                     if (theme === "system") {
-                        const systemTheme = window.matchMedia(
-                            "(prefers-color-scheme: dark)"
-                        ).matches
+                        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+                            .matches
                             ? "dark"
                             : "light";
 
@@ -36,5 +34,6 @@
                 } catch (_) {}
             })();
         </script>
+        <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>

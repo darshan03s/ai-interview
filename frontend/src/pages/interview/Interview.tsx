@@ -7,6 +7,7 @@ import type { Interview } from "@/types";
 import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck, Mic } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import Report from "./components/Report";
 
 interface Message {
     role: "user" | "model";
@@ -23,19 +24,12 @@ const Interview = () => {
     const [interview, setInterview] = useState<Interview | null>(null);
     const [userMessage, setUserMessage] = useState<string>("");
     const [messagesHistory, setMessagesHistory] = useState<Message[]>([]);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
     const [spellChecking, setSpellChecking] = useState<boolean>(false);
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const finalTranscriptRef = useRef<string>('');
-
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messagesHistory]);
 
 
     const startInterviewWithAI = async () => {
@@ -441,187 +435,192 @@ const Interview = () => {
     }
 
     return (
-        <div className="flex items-center justify-center gap-4 mx-8 min-h-[calc(80vh)] h-[calc(80vh)] my-4">
-            <div className="w-2/3 py-1 space-y-2 h-full">
-                <a
-                    href={interview?.resume_url}
-                    target="_blank"
-                    className="inline-flex items-center w-full justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
-                >
-                    <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    View your resume
-                </a>
-                {/* Messages Container */}
-                <div className="bg-card h-full rounded-2xl ring-1 ring-border shadow-sm overflow-hidden">
-                    <div className="h-full overflow-y-auto hide-scrollbar p-4 space-y-4">
-                        {!startedInterview ? (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="text-center text-muted-foreground">
-                                    <p className="text-lg font-medium">Your interview will begin shortly...</p>
-                                    <p className="text-sm">AI is preparing questions based on your resume</p>
+        <div className="flex flex-col gap-12  my-4">
+            <div className="flex items-center justify-center gap-4 mx-8 min-h-[calc(80vh)] h-[calc(80vh)]">
+                <div className="w-2/3 py-1 space-y-2 h-full">
+                    <div className="flex items-center justify-center gap-2">
+                        <a
+                            href={interview?.resume_url}
+                            target="_blank"
+                            className="inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
+                        >
+                            <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                            View your resume
+                        </a>
+                    </div>
+                    {/* Messages Container */}
+                    <div className="bg-card h-full rounded-2xl ring-1 ring-border shadow-sm overflow-hidden">
+                        <div className="h-full overflow-y-auto hide-scrollbar p-4 space-y-4">
+                            {!startedInterview ? (
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="text-center text-muted-foreground">
+                                        <p className="text-lg font-medium">Your interview will begin shortly...</p>
+                                        <p className="text-sm">AI is preparing questions based on your resume</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <>
-                                {messagesHistory.length === 0
-                                    ?
-                                    <div className="flex items-center justify-center h-full">
-                                        <div className="text-center text-muted-foreground">
-                                            <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
-                                        </div>
-                                    </div>
-                                    :
-                                    messagesHistory.map((message, index) => (
-                                        <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            {message.role === 'model' && (
-                                                <div className="flex items-start gap-3 max-w-[80%]">
-                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                                                        AI
-                                                    </div>
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
-                                                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                                                {message.message}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => playAudioMessage(message.message)}
-                                                            className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
-                                                        >
-                                                            <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
-                                                            Play audio
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {message.role === 'user' && (
-                                                <div className="flex items-start gap-3 max-w-[80%]">
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
-                                                            <p className="whitespace-pre-wrap leading-relaxed">
-                                                                {message.message}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
-                                                        {interview?.username?.[0]?.toUpperCase() || 'U'}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-
-                                }
-
-                                {/* Streaming Response */}
-                                {isStreamingResponse && (
-                                    <div className="flex justify-start">
-                                        <div className="flex items-start gap-3 max-w-[80%]">
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                                                AI
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
-                                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                                        {currentStreamingMessage}
-                                                        <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1"></span>
-                                                    </p>
-                                                </div>
+                            ) : (
+                                <>
+                                    {messagesHistory.length === 0
+                                        ?
+                                        <div className="flex items-center justify-center h-full">
+                                            <div className="text-center text-muted-foreground">
+                                                <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        <div ref={messagesEndRef} />
+                                        :
+                                        messagesHistory.map((message, index) => (
+                                            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                {message.role === 'model' && (
+                                                    <div className="flex items-start gap-3 max-w-[80%]">
+                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                            AI
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                                    {message.message}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => playAudioMessage(message.message)}
+                                                                className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                                            >
+                                                                <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
+                                                                Play audio
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {message.role === 'user' && (
+                                                    <div className="flex items-start gap-3 max-w-[80%]">
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
+                                                                <p className="whitespace-pre-wrap leading-relaxed">
+                                                                    {message.message}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
+                                                            {interview?.username?.[0]?.toUpperCase() || 'U'}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+
+                                    }
+
+                                    {/* Streaming Response */}
+                                    {isStreamingResponse && (
+                                        <div className="flex justify-start">
+                                            <div className="flex items-start gap-3 max-w-[80%]">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                    AI
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                            {currentStreamingMessage}
+                                                            <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1"></span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Input Section */}
+                <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 h-full flex flex-col">
+                    <div className="p-4 flex-1">
+                        <textarea
+                            value={userMessage}
+                            onChange={(e) => setUserMessage(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            placeholder="Type your answer here..."
+                            className="w-full bg-transparent resize-none outline-none placeholder:text-muted-foreground h-full leading-relaxed"
+                            disabled={isStreamingResponse}
+                        />
+                    </div>
+                    <div className="px-4 py-4 flex items-center justify-between h-[100px]">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Enter to send • Shift+Enter for new line</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={handleVoiceInput}
+                                        disabled={isStreamingResponse}
+                                        className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                    >
+                                        <Mic className="h-4 w-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {isRecording ? 'Stop recording (Shift+R)' : 'Start recording (Shift+R)'}
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={aiSpellCheck}
+                                        disabled={!userMessage.trim() || spellChecking}
+                                        className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
+                                    >
+                                        {spellChecking ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <SpellCheck className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    Spell check (Shift+S)
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={toggleAutoPlayTTS}
+                                        className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
+                                    >
+                                        <CirclePlay className="h-4 w-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {autoPlayTTS ? 'Disable TTS' : 'Enable TTS'}
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!userMessage.trim() || isStreamingResponse}
+                                        className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
+                                    >
+                                        {isStreamingResponse ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <SendIcon className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    Send message
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Input Section */}
-            <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 h-full flex flex-col">
-                <div className="p-4 flex-1">
-                    <textarea
-                        value={userMessage}
-                        onChange={(e) => setUserMessage(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        placeholder="Type your answer here..."
-                        className="w-full bg-transparent resize-none outline-none placeholder:text-muted-foreground h-full leading-relaxed"
-                        disabled={isStreamingResponse}
-                    />
-                </div>
-                <div className="px-4 py-4 flex items-center justify-between h-[100px]">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>Enter to send • Shift+Enter for new line</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={handleVoiceInput}
-                                    disabled={isStreamingResponse}
-                                    className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
-                                >
-                                    <Mic className="h-4 w-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {isRecording ? 'Stop recording (Shift+R)' : 'Start recording (Shift+R)'}
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={aiSpellCheck}
-                                    disabled={!userMessage.trim() || spellChecking}
-                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
-                                >
-                                    {spellChecking ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <SpellCheck className="h-4 w-4" />
-                                    )}
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                Spell check (Shift+S)
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={toggleAutoPlayTTS}
-                                    className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95`}
-                                >
-                                    <CirclePlay className="h-4 w-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {autoPlayTTS ? 'Disable TTS' : 'Enable TTS'}
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={sendMessage}
-                                    disabled={!userMessage.trim() || isStreamingResponse}
-                                    className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
-                                >
-                                    {isStreamingResponse ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <SendIcon className="h-4 w-4" />
-                                    )}
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                Send message
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                </div>
-            </div>
+            <Report interviewId={interviewId!} />
         </div>
     );
 };

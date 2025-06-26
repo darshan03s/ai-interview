@@ -7,9 +7,15 @@ import {
     getInterviews,
     deleteInterview,
     renameInterview,
+    getReport,
+    createReport,
+    updateReport,
+    uploadReport,
 } from "../supabase/supabaseUtils";
-import { GoogleGenAI } from "@google/genai";
+import gemini from "../llm/gemini";
 import { systemPrompt } from "../llm/prompts";
+import { generateReport } from "../llm/generateReport";
+import { Message } from "../llm/types";
 
 export async function createInterviewController(req: Request, res: Response) {
     const { username, interview_type } = req.body;
@@ -32,6 +38,7 @@ export async function createInterviewController(req: Request, res: Response) {
     }
 
     const interview = await createInterview(user.id, username, file, interview_type);
+    await createReport(user.id, interview.interview_id, "", "");
 
     if (!interview) {
         res.status(500).json({ message: "Error creating interview" });
@@ -97,10 +104,6 @@ export async function startInterviewController(req: Request, res: Response) {
     }
 }
 
-const gemini = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
-
 export async function continueInterviewController(req: Request, res: Response) {
     const { interview_id, message } = req.body;
     if (!interview_id) {
@@ -126,7 +129,7 @@ export async function continueInterviewController(req: Request, res: Response) {
 
     try {
         const messagesHistory = await getMessages(interview_id, user.id);
-        const messages = [];
+        const messages: Message[] = [];
         if (!messagesHistory) {
             res.status(500).json({ message: "Error getting messages" });
             return;
@@ -285,5 +288,54 @@ export async function renameInterviewController(req: Request, res: Response) {
         console.error("Error renaming interview:", error);
         res.status(500).json({ message: "Error renaming interview" });
         return;
+    }
+}
+
+export async function getReportController(req: Request, res: Response) {
+    const { interview_id } = req.body;
+    if (!interview_id) {
+        res.status(400).json({ message: "Interview ID is required" });
+        return;
+    }
+
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    let report: string | null = null;
+
+    report = await getReport(user.id, interview_id);
+    if (report) {
+        res.status(200).json({ message: "Report fetched successfully", report: report });
+        return;
+    } else {
+        const messagesHistory = await getMessages(interview_id, user.id);
+        if (!messagesHistory) {
+            res.status(500).json({ message: "Error getting messages" });
+            return;
+        }
+
+        const messages: Message[] = [];
+        messagesHistory.forEach((message) => {
+            messages.push({
+                role: message.role,
+                parts: message.parts,
+            });
+        });
+
+        report = await generateReport(messages);
+        if (!report) {
+            res.status(500).json({ message: "Error generating report", report: "No report found" });
+            return;
+        }
+        const reportUrl = await uploadReport(interview_id, report);
+        if (!reportUrl) {
+            res.status(500).json({ message: "Error uploading report" });
+            return;
+        }
+        await updateReport(user.id, interview_id, report, reportUrl, true);
+        res.status(200).json({ message: "Report generated successfully", report: report });
     }
 }

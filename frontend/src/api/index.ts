@@ -124,3 +124,18 @@ export const spellCheck = async (token: string, text: string) => {
 
     return response;
 };
+
+export const getReport = async (token: string, interviewId: string) => {
+    const response = await fetch(`${BASE_URL}/interview/get-report`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
+        }),
+    });
+
+    return response;
+};

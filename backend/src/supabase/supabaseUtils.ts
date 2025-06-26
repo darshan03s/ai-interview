@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import supabase from "./supabase";
 import { Part } from "@google/genai";
+import { mdToPdf } from "../utils/mdToPdf";
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const fileId = nanoid();
@@ -15,6 +16,7 @@ export const uploadFile = async (file: Express.Multer.File) => {
     }
     return { data: data };
 };
+
 export const createInterview = async (
     user_id: string,
     username: string,
@@ -128,4 +130,84 @@ export const getInterviews = async (user_id: string) => {
         return null;
     }
     return data;
+};
+
+export const getReport = async (user_id: string, interview_id: string) => {
+    const { data, error } = await supabase
+        .from("reports")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("interview_id", interview_id)
+        .single();
+    if (error) {
+        if (error.code === "PGRST116") {
+            return null;
+        }
+        console.error("Error getting report:", error);
+        return null;
+    }
+    return data;
+};
+
+export const createReport = async (
+    user_id: string,
+    interview_id: string,
+    report: string,
+    report_url: string,
+    is_created: boolean = false
+) => {
+    const { data, error } = await supabase
+        .from("reports")
+        .insert({ user_id, interview_id, report, report_pdf: report_url, is_created: is_created })
+        .select()
+        .single();
+    if (error) {
+        console.error("Error creating report:", error);
+        return null;
+    }
+    return data;
+};
+
+export const updateReport = async (
+    user_id: string,
+    interview_id: string,
+    report: string,
+    report_url: string,
+    is_created: boolean
+) => {
+    const { data, error } = await supabase
+        .from("reports")
+        .update({ report, report_pdf: report_url, is_created: is_created })
+        .eq("user_id", user_id)
+        .eq("interview_id", interview_id)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error updating report:", error);
+        return null;
+    }
+    return data;
+};
+
+export const uploadReport = async (interview_id: string, report: string) => {
+    const pdf = await mdToPdf(report);
+    const pdfName = `${interview_id}-report.pdf`;
+    const { data, error } = await supabase.storage.from("reports").upload(pdfName, pdf, {
+        contentType: "application/pdf",
+    });
+    if (error) {
+        console.error("Error uploading report:", error);
+        return null;
+    }
+    const expiresIn = 3600 * 24 * 30; // 30 days
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from("reports")
+        .createSignedUrl(data.path, expiresIn);
+    if (signedUrlError) {
+        console.error("Error creating signed URL:", signedUrlError);
+        return null;
+    }
+
+    return signedUrlData.signedUrl;
 };

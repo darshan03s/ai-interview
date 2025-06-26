@@ -8,6 +8,7 @@ import {
     getInterviewsController,
     deleteInterviewController,
     renameInterviewController,
+    getReportController,
 } from "../controllers/interviewControllers";
 
 const router = Router();
@@ -20,5 +21,6 @@ router.post("/get-messages", getMessagesController);
 router.post("/get-interviews", getInterviewsController);
 router.post("/delete-interview", deleteInterviewController);
 router.post("/rename-interview", renameInterviewController);
+router.post("/get-report", getReportController);
 
 export default router;

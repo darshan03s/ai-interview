@@ -1,0 +1,85 @@
+import { useEffect, useState } from "react";
+import { getReport } from "@/api";
+import { toast } from "sonner";
+import { useAuth } from "@/features/auth";
+import { Button } from "@/components/ui/button";
+
+import MarkdownRenderer from "./MarkdownRenderer";
+import { FileText } from "lucide-react";
+
+type Report = {
+    report_url: string;
+    is_created: boolean;
+    created_at: string;
+    report: string;
+    report_pdf: string;
+    user_id: string;
+    interview_id: string;
+}
+
+const Report = ({ interviewId }: { interviewId: string }) => {
+    const [report, setReport] = useState<Report | null>(null);
+    const { session, authLoading } = useAuth();
+    const [fetchingReport, setFetchingReport] = useState(false);
+
+    const fetchReport = async () => {
+        if (authLoading) return;
+        if (!session?.access_token) return;
+        try {
+            setFetchingReport(true);
+            const response = await getReport(session.access_token, interviewId);
+            if (!response.ok) {
+                toast.error("Failed to fetch report");
+                return;
+            }
+            const data = await response.json();
+            console.log(data);
+            if (!data) {
+                toast.error("No report found");
+                return;
+            }
+            setReport(data.report);
+        } catch (error) {
+            toast.error("Failed to fetch report");
+            console.error(error);
+        } finally {
+            setFetchingReport(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReport();
+    }, []);
+
+    if (!report?.is_created) return null;
+
+    return (
+        <div className="report-section border border-primary/50 dark:border-primary/50 max-w-6xl w-full flex-1 mx-auto p-2 rounded-lg flex flex-col gap-4">
+            <h1 className="text-4xl font-bold text-center">Report</h1>
+            {report?.is_created ?
+                null
+                :
+                <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!" onClick={fetchReport} disabled={fetchingReport || report?.is_created}>
+                    {fetchingReport ? "Generating report..." : "Get report"}
+                </Button>
+            }
+            {report?.is_created ?
+                <a
+                    href={report?.report_pdf}
+                    target="_blank"
+                    className="inline-flex items-center w-full justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
+                >
+                    <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                    Download report
+                </a>
+
+                : null}
+            <hr className="px-4" />
+            <div className="report-content min-h-[600px] overflow-y-auto hide-scrollbar w-full">
+                <MarkdownRenderer report={report?.report} />
+            </div>
+        </div>
+    )
+}
+
+export default Report

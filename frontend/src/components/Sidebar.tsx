@@ -86,7 +86,7 @@ const Sidebar = () => {
                     <SheetDescription className='text-sm text-muted-foreground text-center'>Your previous interviews will appear here</SheetDescription>
                 </SheetHeader>
                 <div className="history overflow-y-auto flex flex-col gap-3 hide-scrollbar px-2">
-                    {interviews.length === 0 && (
+                    {interviews?.length === 0 && (
                         <div className='text-center text-muted-foreground flex items-center justify-center h-[calc(100vh-10rem)]'>
                             No interviews yet
                         </div>
@@ -120,8 +120,11 @@ const Sidebar = () => {
                     ))}
                 </div>
                 <SheetFooter className='flex justify-center items-center p-0 px-2'>
-                    <div className='text-sm text-muted-foreground mb-4'>
-                        AI Interview
+                    <div className='text-sm text-muted-foreground mb-4 flex flex-col items-center gap-2'>
+                        <span className='font-bold'>InterviewBot</span>
+                        <span className='text-xs text-muted-foreground'>
+                            Made by <a href="https://github.com/darshan03s" className='hover:text-primary transition-colors'>Darshan</a>
+                        </span>
                     </div>
                 </SheetFooter>
             </SheetContent>

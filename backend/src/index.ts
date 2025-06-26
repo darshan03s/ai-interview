@@ -17,8 +17,6 @@ if (!process.env.GEMINI_API_KEY) {
     console.error("FATAL ERROR: GEMINI_API_KEY environment variable is not set.");
     console.log("Please ensure it is present in your .env file.");
     process.exit(1);
-} else {
-    console.log("GEMINI_API_KEY is set");
 }
 
 app.get("/", (req: Request, res: Response) => {

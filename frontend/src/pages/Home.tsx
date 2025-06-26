@@ -147,16 +147,15 @@ const Home = () => {
   }, [showSelectInterview, selectedInterview, creatingInterview]);
 
   return (
-    <main className="bg-background">
-      <div className="max-w-4xl mx-auto space-y-8 my-12">
+    <main className="bg-background min-h-[calc(100vh-65px)] h-full flex justify-center items-center overflow-hidden">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header Section */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-foreground">
-            Upload Your Resume
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-foreground whitespace-nowrap">
+            Master Your Next Interview with AI-Powered Practice
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume in PDF format to get started with your AI-powered interview.
-            Our AI will analyze your experience and prepare personalized questions.
+            Upload your resume to get started.
           </p>
         </div>
 
@@ -245,7 +244,7 @@ const Home = () => {
 
         {/* Select Interview Section */}
         {showSelectInterview && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 my-4">
             <h2 className="text-2xl font-bold text-center">Select Interview Type</h2>
             <div className="options flex items-center justify-between gap-2">
               <Button
@@ -265,7 +264,7 @@ const Home = () => {
 
         {/* Continue Button */}
         {selectedPdf && selectedInterview && (
-          <div className="flex justify-center">
+          <div className="flex justify-center my-4">
             <Button
               onClick={handleContinue}
               size="lg"

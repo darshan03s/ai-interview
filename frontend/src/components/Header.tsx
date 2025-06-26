@@ -1,4 +1,4 @@
-import { LogIn, LogOut, User } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 import { ThemeToggleButton } from "@/features/theme";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ const Header = () => {
                     <div className="flex items-center gap-4">
                         <Sidebar />
                         <Link to="/" className="text-xl font-bold text-foreground">
-                            AI Interview
+                            InterviewBot
                         </Link>
                     </div>
 
@@ -110,12 +110,7 @@ const Header = () => {
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <User className="mr-2 h-4 w-4" />
-                                        <span>Profile</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={handleSignOut}>
+                                    <DropdownMenuItem onClick={handleSignOut} className="p-2">
                                         <LogOut className="mr-2 h-4 w-4" />
                                         <span>Sign out</span>
                                     </DropdownMenuItem>
