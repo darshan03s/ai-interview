@@ -20,14 +20,12 @@
         "cors": "^2.8.5",
         "dotenv": "^16.5.0",
         "express": "^5.1.0",
+        "marked": "^15.0.12",
         "multer": "^2.0.1",
         "nanoid": "3",
         "puppeteer": "^24.10.2",
-        "remark-html": "^16.0.1",
-        "remark-parse": "^11.0.0",
         "ts-node": "^10.9.2",
-        "typescript": "^5.8.3",
-        "unified": "^11.0.5"
+        "typescript": "^5.8.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.29.0",

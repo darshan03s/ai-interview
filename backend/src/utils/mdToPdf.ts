@@ -1,14 +1,8 @@
 import puppeteer from "puppeteer";
+import { marked } from "marked";
 
 export const mdToPdf = async (text: string) => {
-    const { unified } = await import("unified");
-    const { default: markdown } = await import("remark-parse");
-    const { default: html } = await import("remark-html");
-
-    const processor = unified().use(markdown).use(html);
-    const htmlContent = await processor.process(text);
-    const htmlString = String(htmlContent);
-
+    const htmlString = marked(text);
     const styledHtml = `
       <style>
         body { font-family: Arial, sans-serif; margin: 30px; line-height: 1.4; }

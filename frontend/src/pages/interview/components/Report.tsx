@@ -8,7 +8,7 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import { FileText } from "lucide-react";
 
 const Report = ({ interviewId }: { interviewId: string }) => {
-    const [report, setReport] = useState<ReportType | null>(null);
+    const [report, setReport] = useState<ReportType | undefined>();
     const { session, authLoading } = useAuth();
     const [fetchingReport, setFetchingReport] = useState(false);
 
@@ -40,8 +40,6 @@ const Report = ({ interviewId }: { interviewId: string }) => {
     useEffect(() => {
         fetchReport();
     }, []);
-
-    if (!report?.is_created) return null;
 
     return (
         <div className="report-section border border-primary/50 dark:border-primary/50 max-w-6xl w-full flex-1 mx-auto p-2 rounded-lg flex flex-col gap-4">

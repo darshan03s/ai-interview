@@ -26,10 +26,20 @@ const Interview = () => {
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const finalTranscriptRef = useRef<string>('');
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+    }
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messagesHistory]);
 
 
     const startInterviewWithAI = async () => {
-        if (startedInterview) return;
         setIsLoading(true);
         const token = session?.access_token;
         if (!token) {
@@ -138,6 +148,7 @@ const Interview = () => {
     }
 
     const getMessages = async () => {
+        console.log('fetching messages for ' + interviewId);
         const token = session?.access_token;
         if (!token) {
             console.error('User not signed in');
@@ -394,16 +405,12 @@ const Interview = () => {
     }, [authLoading, interviewId]);
 
     useEffect(() => {
-        if (startedInterview && messagesHistory.length === 0 && interviewId) {
+        if (startedInterview && interviewId) {
             getMessages();
         }
     }, [startedInterview, interviewId]);
 
     useEffect(() => {
-        if (interview?.is_completed) {
-            toast.info("Interview is already completed");
-            return;
-        }
         const initializeVoice = () => {
             try {
                 if (!('speechSynthesis' in window)) {
@@ -451,7 +458,7 @@ const Interview = () => {
 
     if (isLoading || !startedInterview) {
         return (
-            <div className="max-w-4xl mx-auto min-h-[600px] flex items-center justify-center">
+            <div className="max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="text-muted-foreground">Loading...</p>
@@ -461,10 +468,10 @@ const Interview = () => {
     }
 
     return (
-        <div className="flex flex-col gap-12  my-4">
-            <div className="flex items-center justify-center gap-4 mx-8 min-h-[calc(80vh)] h-[calc(80vh)]">
-                <div className="w-2/3 py-1 space-y-2 h-full">
-                    <div className="flex items-center justify-center gap-2">
+        <div className="interview-container flex flex-col justify-center gap-12 py-4">
+            <div className="interview-container-messages flex items-center justify-center gap-4 mx-8 flex-1">
+                <div className="interview-container-messages-left w-2/3 space-y-2 h-full flex flex-col gap-2">
+                    <div className="resume-url flex items-center justify-center gap-2 h-4">
                         <a
                             href={interview?.resume_url}
                             target="_blank"
@@ -475,104 +482,95 @@ const Interview = () => {
                         </a>
                     </div>
                     {/* Messages Container */}
-                    <div className="bg-card h-full rounded-2xl ring-1 ring-border shadow-sm overflow-hidden">
-                        <div className="h-full overflow-y-auto hide-scrollbar p-4 space-y-4">
-                            {!startedInterview ? (
-                                <div className="flex items-center justify-center h-full">
-                                    <div className="text-center text-muted-foreground">
-                                        <p className="text-lg font-medium">Your interview will begin shortly...</p>
-                                    </div>
+                    <div ref={messagesContainerRef} className="chat-section bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-y-auto hide-scrollbar p-4 space-y-4 max-h-[calc(100vh-8rem)] h-[calc(100vh-8rem)]">
+                        {!startedInterview ? (
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-center text-muted-foreground">
+                                    <p className="text-lg font-medium">Your interview will begin shortly...</p>
                                 </div>
-                            ) : (
-                                <>
-                                    {
-                                        // messagesHistory.length === 0
-                                        //     ?
-                                        //     <div className="flex items-center justify-center h-full">
-                                        //         <div className="text-center text-muted-foreground">
-                                        //             <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
-                                        //         </div>
-                                        //     </div>
-                                        fetchingMessages ?
+                            </div>
+                        ) : (
+                            <>
+                                {
+                                    fetchingMessages ?
+                                        <div className="flex items-center justify-center h-full">
+                                            <div className="text-center text-muted-foreground">
+                                                <p className="text-lg font-medium">Loading...</p>
+                                            </div>
+                                        </div> : !fetchingMessages && messagesHistory.length === 0 ?
                                             <div className="flex items-center justify-center h-full">
                                                 <div className="text-center text-muted-foreground">
-                                                    <p className="text-lg font-medium">Loading...</p>
+                                                    <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
                                                 </div>
-                                            </div> : !fetchingMessages && messagesHistory.length === 0 ?
-                                                <div className="flex items-center justify-center h-full">
-                                                    <div className="text-center text-muted-foreground">
-                                                        <p className="text-lg font-medium">Type 'Let's Start' to start the interview</p>
-                                                    </div>
-                                                </div>
-                                                :
-                                                messagesHistory.map((message, index) => (
-                                                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                        {message.role === 'model' && (
-                                                            <div className="flex items-start gap-3 max-w-[80%]">
-                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                                                                    AI
+                                            </div>
+                                            :
+                                            messagesHistory.map((message, index) => (
+                                                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    {message.role === 'model' && (
+                                                        <div className="flex items-start gap-3 max-w-[80%]">
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                                AI
+                                                            </div>
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                                        {message.message}
+                                                                    </p>
                                                                 </div>
-                                                                <div className="flex flex-col gap-2">
-                                                                    <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
-                                                                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                                                            {message.message}
-                                                                        </p>
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={() => playAudioMessage(message.message)}
-                                                                        className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
-                                                                    >
-                                                                        <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
-                                                                        Play audio
-                                                                    </button>
+                                                                <button
+                                                                    onClick={() => playAudioMessage(message.message)}
+                                                                    className="self-start flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors group"
+                                                                >
+                                                                    <PlayIcon className="h-3 w-3 group-hover:scale-110 transition-transform" />
+                                                                    Play audio
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {message.role === 'user' && (
+                                                        <div className="flex items-start gap-3 max-w-[80%]">
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
+                                                                    <p className="whitespace-pre-wrap leading-relaxed">
+                                                                        {message.message}
+                                                                    </p>
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        {message.role === 'user' && (
-                                                            <div className="flex items-start gap-3 max-w-[80%]">
-                                                                <div className="flex flex-col gap-2">
-                                                                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-4 shadow-sm">
-                                                                        <p className="whitespace-pre-wrap leading-relaxed">
-                                                                            {message.message}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
-                                                                    {interview?.username?.[0]?.toUpperCase() || 'U'}
-                                                                </div>
+                                                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-sm shrink-0">
+                                                                {interview?.username?.[0]?.toUpperCase() || 'U'}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                ))
-
-                                    }
-
-                                    {/* Streaming Response */}
-                                    {isStreamingResponse && (
-                                        <div className="flex justify-start">
-                                            <div className="flex items-start gap-3 max-w-[80%]">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                                                    AI
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
-                                                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                                            {currentStreamingMessage}
-                                                            <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1"></span>
-                                                        </p>
-                                                    </div>
+                                            ))
+
+                                }
+
+                                {/* Streaming Response */}
+                                {isStreamingResponse && (
+                                    <div className="flex justify-start">
+                                        <div className="flex items-start gap-3 max-w-[80%]">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                                                AI
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="bg-muted rounded-2xl rounded-tl-md p-4 shadow-sm">
+                                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                                        {currentStreamingMessage}
+                                                        <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-1"></span>
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
 
                 {/* Input Section */}
-                <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 h-full flex flex-col">
+                <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden h-[-webkit-fill-available] flex-1 flex flex-col">
                     <div className="p-4 flex-1">
                         <textarea
                             value={userMessage}

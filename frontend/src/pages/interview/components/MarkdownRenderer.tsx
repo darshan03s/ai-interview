@@ -2,7 +2,7 @@ import Markdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import rehypeRaw from "rehype-raw"
 
-const MarkdownRenderer = ({ report }: { report: string | null }) => {
+const MarkdownRenderer = ({ report }: { report: string | undefined }) => {
     if (!report) return null;
     return (
         <div className="prose dark:prose-invert w-full min-w-full px-2">

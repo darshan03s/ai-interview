@@ -29,7 +29,7 @@ You have taken the interview of a candidate, based on the interview, you need to
 - Start immediately, dont say stuff like 'Here is the report...'.
 - Create it in a first person perspective, as if you are the one who conducted the interview. Use 'you' instead of 'candidate'.
 - Candidate may have requested to end the interview, in that case create the report based on the interview till that point and their resume.
-- Dont add any other text or '---' before the summary, start directly with '# Summary ... '.
+- Dont add any other text or '---' before the summary, start directly with '## Summary ... '.
 - Allowed markdown format:
     - Heading 1
     - Heading 2

@@ -322,10 +322,10 @@ export async function getReportController(req: Request, res: Response) {
         return;
     }
 
-    let report: string | null = null;
+    let report;
 
     report = await getReport(user.id, interview_id);
-    if (report) {
+    if (report && report.is_created) {
         res.status(200).json({ message: "Report fetched successfully", report: report });
         return;
     } else {
@@ -354,7 +354,11 @@ export async function getReportController(req: Request, res: Response) {
             res.status(500).json({ message: "Error uploading report" });
             return;
         }
-        await updateReport(user.id, interview_id, report, reportUrl, true);
+        report = await updateReport(user.id, interview_id, report, reportUrl, true);
+        if (!report) {
+            res.status(500).json({ message: "Error updating report" });
+            return;
+        }
         res.status(200).json({ message: "Report generated successfully", report: report });
     }
 }

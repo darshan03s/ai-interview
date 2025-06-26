@@ -147,176 +147,174 @@ const Home = () => {
   }, [showSelectInterview, selectedInterview, creatingInterview]);
 
   return (
-    <main className="bg-background min-h-[calc(100vh-65px)] h-full flex justify-center items-center overflow-hidden">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-foreground whitespace-nowrap">
-            Master Your Next Interview with AI-Powered Practice
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume to get started.
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8 min-h-[calc(100vh-4rem)] flex flex-col justify-center">
+      {/* Header Section */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-foreground whitespace-nowrap">
+          Master Your Next Interview with AI-Powered Practice
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Upload your resume to get started.
+        </p>
+      </div>
 
-        {/* File Upload Section */}
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Resume Upload
-            </CardTitle>
-            <CardDescription>
-              Select a PDF file (max {MAX_FILE_SIZE_NUMBER}MB) to upload your resume
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* File Input Area */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${selectedPdf
-                ? 'border-green-300 bg-green-50 dark:bg-green-950/20'
-                : 'border-border hover:border-primary/50 hover:bg-accent/50'
-                }`}
-              onClick={handleFileSelect}
-            >
-              <div className="flex flex-col items-center gap-4">
-                {selectedPdf ? (
-                  <>
-                    <FileText className="h-12 w-12 text-green-600" />
-                    <div>
-                      <p className="text-lg font-medium text-foreground">
-                        {selectedPdf.file.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatFileSize(selectedPdf.file.size)} • PDF File
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemovePdf();
-                      }}
-                    >
-                      Remove File
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-12 w-12 text-muted-foreground" />
-                    <div>
-                      <p className="text-lg font-medium text-foreground">
-                        Click to upload your resume
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        PDF files only, up to {MAX_FILE_SIZE_NUMBER}MB
-                      </p>
-                    </div>
-                    {!session && (
-                      <p className="text-xs text-orange-600 dark:text-orange-400">
-                        {!authLoading && 'Sign in required to upload files'}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Hidden File Input */}
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-
-            {/* Error Display */}
-            {uploadError && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                <AlertCircle className="h-4 w-4" />
-                {uploadError}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Select Interview Section */}
-        {showSelectInterview && (
-          <div className="flex flex-col gap-4 my-4">
-            <h2 className="text-2xl font-bold text-center">Select Interview Type</h2>
-            <div className="options flex items-center justify-between gap-2">
-              <Button
-                variant="outline"
-                className={`${selectedInterview === "technical" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
-                onClick={() => setSelectedInterview("technical")}
-              >Technical</Button>
-              <Button variant="outline"
-                className={`${selectedInterview === "techno-managerial" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
-                onClick={() => setSelectedInterview("techno-managerial")}
-              >Techno-Managerial</Button>
+      {/* File Upload Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Resume Upload
+          </CardTitle>
+          <CardDescription>
+            Select a PDF file (max {MAX_FILE_SIZE_NUMBER}MB) to upload your resume
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* File Input Area */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${selectedPdf
+              ? 'border-green-300 bg-green-50 dark:bg-green-950/20'
+              : 'border-border hover:border-primary/50 hover:bg-accent/50'
+              }`}
+            onClick={handleFileSelect}
+          >
+            <div className="flex flex-col items-center gap-4">
+              {selectedPdf ? (
+                <>
+                  <FileText className="h-12 w-12 text-green-600" />
+                  <div>
+                    <p className="text-lg font-medium text-foreground">
+                      {selectedPdf.file.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatFileSize(selectedPdf.file.size)} • PDF File
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemovePdf();
+                    }}
+                  >
+                    Remove File
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-12 w-12 text-muted-foreground" />
+                  <div>
+                    <p className="text-lg font-medium text-foreground">
+                      Click to upload your resume
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      PDF files only, up to {MAX_FILE_SIZE_NUMBER}MB
+                    </p>
+                  </div>
+                  {!session && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      {!authLoading && 'Sign in required to upload files'}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </div>
-        )
-        }
 
+          {/* Hidden File Input */}
+          <Input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            className="hidden"
+          />
 
-        {/* Continue Button */}
-        {selectedPdf && selectedInterview && (
-          <div className="flex justify-center my-4">
+          {/* Error Display */}
+          {uploadError && (
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+              <AlertCircle className="h-4 w-4" />
+              {uploadError}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Select Interview Section */}
+      {showSelectInterview && (
+        <div className="flex flex-col gap-4 my-4">
+          <h2 className="text-2xl font-bold text-center">Select Interview Type</h2>
+          <div className="options flex items-center justify-between gap-6">
             <Button
-              onClick={handleContinue}
-              size="lg"
-              className={`min-w-32 ${creatingInterview || !selectedInterview ? 'opacity-50 cursor-not-allowed!' : ''}`}
-              disabled={creatingInterview || !selectedInterview}
+              variant="outline"
+              className={`${selectedInterview === "technical" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
+              onClick={() => setSelectedInterview("technical")}
+            >Technical</Button>
+            <Button variant="outline"
+              className={`${selectedInterview === "techno-managerial" ? "ring ring-blue-500" : ""} flex-1 h-35 text-2xl`}
+              onClick={() => setSelectedInterview("techno-managerial")}
+            >Techno-Managerial</Button>
+          </div>
+        </div>
+      )
+      }
+
+
+      {/* Continue Button */}
+      {selectedPdf && selectedInterview && (
+        <div className="flex justify-center my-4">
+          <Button
+            onClick={handleContinue}
+            size="lg"
+            className={`min-w-32 ${creatingInterview || !selectedInterview ? 'opacity-50 cursor-not-allowed!' : ''}`}
+            disabled={creatingInterview || !selectedInterview}
+          >
+            {creatingInterview ? 'Creating Interview...' : 'Continue'}
+          </Button>
+        </div>
+      )}
+
+      {/* Sign In Modal */}
+      <Dialog open={showSignInModal} onOpenChange={setShowSignInModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5" />
+              Sign In Required
+            </DialogTitle>
+            <DialogDescription>
+              You need to sign in to upload and process your resume. This helps us securely store your data and provide personalized interview questions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 pt-4">
+            <Button
+              onClick={handleSignIn}
+              disabled={authLoading}
+              className="w-full"
             >
-              {creatingInterview ? 'Creating Interview...' : 'Continue'}
+              {authLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Signing in...
+                </div>
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign in with Google
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowSignInModal(false)}
+            >
+              Cancel
             </Button>
           </div>
-        )}
-
-        {/* Sign In Modal */}
-        <Dialog open={showSignInModal} onOpenChange={setShowSignInModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <LogIn className="h-5 w-5" />
-                Sign In Required
-              </DialogTitle>
-              <DialogDescription>
-                You need to sign in to upload and process your resume. This helps us securely store your data and provide personalized interview questions.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 pt-4">
-              <Button
-                onClick={handleSignIn}
-                disabled={authLoading}
-                className="w-full"
-              >
-                {authLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Signing in...
-                  </div>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign in with Google
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowSignInModal(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </main>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
