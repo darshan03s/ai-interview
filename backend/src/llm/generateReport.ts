@@ -3,7 +3,10 @@ import gemini from "./gemini";
 import { Message } from "./types";
 import { generateReportPrompt } from "./prompts";
 
-export async function generateReport(messages: Message[]): Promise<string | null> {
+export async function generateReport(
+    messages: Message[],
+    createdAt: string
+): Promise<string | null> {
     try {
         if (!gemini) {
             return "All API keys are currently rate limited. Please try again in a few minutes.";
@@ -13,7 +16,7 @@ export async function generateReport(messages: Message[]): Promise<string | null
             model: "gemini-2.5-flash",
             contents: messages,
             config: {
-                systemInstruction: generateReportPrompt,
+                systemInstruction: generateReportPrompt + "Interview created at: " + createdAt,
                 maxOutputTokens: 1_000_000,
                 temperature: 0.5,
             },

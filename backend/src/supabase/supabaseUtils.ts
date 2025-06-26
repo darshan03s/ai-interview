@@ -21,7 +21,8 @@ export const createInterview = async (
     user_id: string,
     username: string,
     file: Express.Multer.File,
-    interview_type: string
+    interview_type: string,
+    title: string
 ) => {
     const { data: fileData, error: fileError } = await uploadFile(file);
     if (fileError) {
@@ -42,7 +43,13 @@ export const createInterview = async (
 
     const { data, error } = await supabase
         .from("interviews")
-        .insert({ user_id, username, resume_url: signedUrlData.signedUrl, interview_type })
+        .insert({
+            user_id,
+            username,
+            resume_url: signedUrlData.signedUrl,
+            interview_type,
+            title,
+        })
         .select()
         .single();
 
@@ -53,10 +60,11 @@ export const createInterview = async (
     return data;
 };
 
-export const getInterview = async (interview_id: string) => {
+export const getInterview = async (user_id: string, interview_id: string) => {
     const { data, error } = await supabase
         .from("interviews")
         .select("*")
+        .eq("user_id", user_id)
         .eq("interview_id", interview_id)
         .single();
     if (error) {
@@ -124,7 +132,11 @@ export const renameInterview = async (interview_id: string, new_name: string) =>
 };
 
 export const getInterviews = async (user_id: string) => {
-    const { data, error } = await supabase.from("interviews").select("*").eq("user_id", user_id);
+    const { data, error } = await supabase
+        .from("interviews")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: false });
     if (error) {
         console.error("Error getting interviews:", error);
         return null;

@@ -5,17 +5,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getInterviews, deleteInterview, renameInterview } from '@/api'
-import type { Interview } from '@/types'
+import type { InterviewType } from '@/types'
 import { useAuth } from '@/features/auth'
 import { Dialog, DialogTitle, DialogHeader, DialogContent, DialogFooter, DialogClose, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 const Sidebar = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [deletingInterviewId, setDeletingInterviewId] = useState<string | null>(null)
     const [renamingInterviewId, setRenamingInterviewId] = useState<string | null>(null)
-    const [interviews, setInterviews] = useState<Interview[]>([])
+    const [interviews, setInterviews] = useState<InterviewType[]>([])
     const [renameDialogOpen, setRenameDialogOpen] = useState(false)
     const { session, authLoading } = useAuth()
     const params = useParams()
@@ -94,7 +95,17 @@ const Sidebar = () => {
                     {interviews.map((interview, index) => (
                         <div key={index} className='history-item group flex items-center justify-between p-3 rounded-lg hover:bg-accent/50 transition-colors duration-200'>
                             <Link to={`/interview/${interview.interview_id}`} className='font-medium text-foreground hover:text-primary transition-colors flex-1 min-w-0'>
-                                <span className='truncate block'>{interview.title}</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className='truncate block'>
+                                            {interview.title}
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side='top'>
+                                        {interview.title} <br />
+                                        Created at - {new Date(interview.created_at).toLocaleString()}
+                                    </TooltipContent>
+                                </Tooltip>
                             </Link>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

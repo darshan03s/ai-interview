@@ -13,20 +13,20 @@ import {
 } from "@/components/ui/dialog";
 import { createInterview } from "@/api";
 import { toast } from "sonner";
-import type { PdfFile, Interview, InterviewType } from "@/types";
+import type { PdfFileType, InterviewType, SelectedInterviewType } from "@/types";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const { session, signInWithGoogle, authLoading } = useAuth();
-  const [selectedPdf, setSelectedPdf] = useState<PdfFile | null>(null);
+  const [selectedPdf, setSelectedPdf] = useState<PdfFileType | null>(null);
   const [showSignInModal, setShowSignInModal] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [creatingInterview, setCreatingInterview] = useState<boolean>(false);
-  const [interview, setInterview] = useState<Interview | null>(null);
+  const [interview, setInterview] = useState<InterviewType | null>(null);
   const navigate = useNavigate();
   const [showSelectInterview, setShowSelectInterview] = useState<boolean>(false);
-  const [selectedInterview, setSelectedInterview] = useState<InterviewType | null>(null);
+  const [selectedInterview, setSelectedInterview] = useState<SelectedInterviewType | null>(null);
 
   const MAX_FILE_SIZE_NUMBER = 2;
   const MAX_FILE_SIZE = MAX_FILE_SIZE_NUMBER * 1024 * 1024;
@@ -109,7 +109,7 @@ const Home = () => {
         return;
       }
       try {
-        const response = await createInterview(token, username, selectedPdf.file, selectedInterview);
+        const response = await createInterview(token, username, selectedPdf.file, selectedInterview, new Date().toLocaleString());
         if (!response.ok) {
           toast.error('Failed to create interview, Bad response from server');
           console.error('Failed to create interview, Bad response from server');

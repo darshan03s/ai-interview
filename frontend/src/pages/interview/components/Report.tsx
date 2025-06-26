@@ -3,22 +3,12 @@ import { getReport } from "@/api";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/components/ui/button";
-
+import type { ReportType } from "@/types";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { FileText } from "lucide-react";
 
-type Report = {
-    report_url: string;
-    is_created: boolean;
-    created_at: string;
-    report: string;
-    report_pdf: string;
-    user_id: string;
-    interview_id: string;
-}
-
 const Report = ({ interviewId }: { interviewId: string }) => {
-    const [report, setReport] = useState<Report | null>(null);
+    const [report, setReport] = useState<ReportType | null>(null);
     const { session, authLoading } = useAuth();
     const [fetchingReport, setFetchingReport] = useState(false);
 

@@ -4,12 +4,14 @@ export const createInterview = async (
     token: string,
     username: string,
     file: File,
-    interviewType: string
+    interviewType: string,
+    date: string
 ) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("username", username);
     formData.append("interview_type", interviewType);
+    formData.append("date", date);
     const response = await fetch(`${BASE_URL}/interview/create-interview`, {
         method: "POST",
         headers: {

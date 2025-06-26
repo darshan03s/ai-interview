@@ -3,16 +3,11 @@ import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useParams } from "react-router-dom";
 import { continueInterview, startInterview, getMessagesHistory, spellCheck } from "@/api";
-import type { Interview } from "@/types";
+import type { InterviewType, MessageType } from "@/types";
 import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck, Mic } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Report from "./components/Report";
-
-interface Message {
-    role: "user" | "model";
-    message: string;
-}
 
 const Interview = () => {
     const [startedInterview, setStartedInterview] = useState<boolean>(false);
@@ -21,9 +16,9 @@ const Interview = () => {
     const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
     const { session, authLoading } = useAuth();
     const { interviewId } = useParams();
-    const [interview, setInterview] = useState<Interview | null>(null);
+    const [interview, setInterview] = useState<InterviewType | null>(null);
     const [userMessage, setUserMessage] = useState<string>("");
-    const [messagesHistory, setMessagesHistory] = useState<Message[]>([]);
+    const [messagesHistory, setMessagesHistory] = useState<MessageType[]>([]);
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
     const [spellChecking, setSpellChecking] = useState<boolean>(false);
@@ -74,7 +69,7 @@ const Interview = () => {
         }
 
         // Add user message to history immediately
-        const newUserMessage: Message = { role: "user", message: userMessage };
+        const newUserMessage: MessageType = { role: "user", message: userMessage };
         setMessagesHistory(prev => [...prev, newUserMessage]);
         const currentMessage = userMessage;
         setUserMessage("");
@@ -111,7 +106,7 @@ const Interview = () => {
             }
 
             // Add the complete AI response to messages history
-            const newModelMessage: Message = { role: "model", message: chunks };
+            const newModelMessage: MessageType = { role: "model", message: chunks };
             if (autoPlayTTS) {
                 playAudioMessage(chunks);
             }
@@ -620,7 +615,9 @@ const Interview = () => {
                 </div>
             </div>
 
-            <Report interviewId={interviewId!} />
+            {interview?.is_completed && (
+                <Report interviewId={interviewId!} />
+            )}
         </div>
     );
 };

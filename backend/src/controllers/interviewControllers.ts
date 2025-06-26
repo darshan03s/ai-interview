@@ -18,7 +18,7 @@ import { generateReport } from "../llm/generateReport";
 import { Message } from "../llm/types";
 
 export async function createInterviewController(req: Request, res: Response) {
-    const { username, interview_type } = req.body;
+    const { username, interview_type, date } = req.body;
     const file = req.file;
     if (!username) {
         res.status(400).json({ message: "Username is required" });
@@ -37,7 +37,9 @@ export async function createInterviewController(req: Request, res: Response) {
         return;
     }
 
-    const interview = await createInterview(user.id, username, file, interview_type);
+    const title = `${interview_type.charAt(0).toUpperCase() + interview_type.slice(1)} Interview - ${date}`;
+
+    const interview = await createInterview(user.id, username, file, interview_type, title);
     await createReport(user.id, interview.interview_id, "", "");
 
     if (!interview) {
@@ -61,7 +63,7 @@ export async function startInterviewController(req: Request, res: Response) {
         return;
     }
 
-    const interview = await getInterview(interview_id);
+    const interview = await getInterview(user.id, interview_id);
     if (!interview) {
         res.status(404).json({ message: "Interview not found" });
         return;
@@ -121,7 +123,7 @@ export async function continueInterviewController(req: Request, res: Response) {
         return;
     }
 
-    const interview = await getInterview(interview_id);
+    const interview = await getInterview(user.id, interview_id);
     if (!interview) {
         res.status(404).json({ message: "Interview not found" });
         return;
@@ -158,7 +160,10 @@ export async function continueInterviewController(req: Request, res: Response) {
             model: "gemini-2.5-flash",
             contents: messages,
             config: {
-                systemInstruction: systemPrompt,
+                systemInstruction:
+                    systemPrompt +
+                    "Interview created at: " +
+                    new Date(interview.created_at).toLocaleString(),
                 maxOutputTokens: 1_000_000,
                 temperature: 0.5,
                 thinkingConfig: {
@@ -325,7 +330,8 @@ export async function getReportController(req: Request, res: Response) {
             });
         });
 
-        report = await generateReport(messages);
+        const interview = await getInterview(user.id, interview_id);
+        report = await generateReport(messages, new Date(interview.created_at).toLocaleString());
         if (!report) {
             res.status(500).json({ message: "Error generating report", report: "No report found" });
             return;
