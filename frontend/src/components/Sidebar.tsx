@@ -11,6 +11,7 @@ import { Dialog, DialogTitle, DialogHeader, DialogContent, DialogFooter, DialogC
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toast } from 'sonner'
 
 const Sidebar = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -23,6 +24,7 @@ const Sidebar = () => {
     const [renameInput, setRenameInput] = useState<string>('')
     const [renamingInterview, setRenamingInterview] = useState<boolean>(false)
     const [deletingInterview, setDeletingInterview] = useState<boolean>(false)
+    const [fetchingInterviews, setFetchingInterviews] = useState<boolean>(false)
 
     const handleDeleteClick = (interview_id: string) => {
         setDeletingInterviewId(interview_id)
@@ -69,9 +71,38 @@ const Sidebar = () => {
         const token = session?.access_token
         if (!token) return
         const fetchInterviews = async () => {
-            const response = await getInterviews(token);
-            const data = await response.json()
-            setInterviews(data.interviews)
+            try {
+                setFetchingInterviews(true)
+                const response = await getInterviews(token);
+                if (!response.ok) {
+                    if (response.status >= 400 && response.status < 500) {
+                        toast.error('Unable to fetch interviews. Client error')
+                        console.error(`Failed to fetch interviews: Client error (${response.status})`)
+                        return
+                    } else if (response.status >= 500) {
+                        toast.error('Unable to fetch interviews. Server error')
+                        console.error(`Failed to fetch interviews: Server error (${response.status})`)
+                        return
+                    }
+                    toast.error('Unable to fetch interviews. Unknown error')
+                    console.error(`Failed to fetch interviews: Unknown error (${response.status})`)
+                    return
+                }
+                const data = await response.json()
+                if (!data) {
+                    toast.error('Failed to fetch interviews, No data received from server')
+                    console.error('Failed to fetch interviews, No data received from server')
+                    return
+                }
+                if (data.error) {
+                    toast.error(data.error.message)
+                    console.error(data.error.message)
+                    return
+                }
+                setInterviews(data.data)
+            } catch (error) {
+                console.error(error)
+            }
         };
         fetchInterviews();
     }, [authLoading, interviewId]);
@@ -89,7 +120,7 @@ const Sidebar = () => {
                 <div className="history overflow-y-auto flex flex-col gap-3 hide-scrollbar px-2">
                     {interviews?.length === 0 && (
                         <div className='text-center text-muted-foreground flex items-center justify-center h-[calc(100vh-10rem)]'>
-                            No interviews yet
+                            {fetchingInterviews ? 'Fetching interviews...' : 'No interviews yet'}
                         </div>
                     )}
                     {interviews.map((interview, index) => (

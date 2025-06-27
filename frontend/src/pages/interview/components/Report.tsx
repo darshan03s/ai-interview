@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { ReportType } from "@/types";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { FileText } from "lucide-react";
+import { devLog } from "@/utils/devUtils";
 
 const Report = ({ interviewId }: { interviewId: string }) => {
     const [report, setReport] = useState<ReportType | undefined>();
@@ -19,16 +20,34 @@ const Report = ({ interviewId }: { interviewId: string }) => {
             setFetchingReport(true);
             const response = await getReport(session.access_token, interviewId);
             if (!response.ok) {
-                toast.error("Failed to fetch report");
+                if (response.status >= 400 && response.status < 500) {
+                    toast.error('Unable to fetch report. Client error')
+                    console.error(`Failed to fetch report: Client error (${response.status})`)
+                    return
+                } else if (response.status >= 500) {
+                    toast.error('Unable to fetch report. Server error')
+                    console.error(`Failed to fetch report: Server error (${response.status})`)
+                    return
+                }
+                toast.error('Unable to fetch report. Unknown error')
+                console.error(`Failed to fetch report: Unknown error (${response.status})`)
+                return
+            }
+
+            const res = await response.json();
+
+            devLog(res);
+            if (!res) {
+                toast.error("Failed to fetch report, No data received from server");
+                console.error("Failed to fetch report, No data received from server");
                 return;
             }
-            const data = await response.json();
-            console.log(data);
-            if (!data) {
-                toast.error("No report found");
+            if (res.error) {
+                toast.error(res.error.message);
+                console.error(res.error.message);
                 return;
             }
-            setReport(data.report);
+            setReport(res.data);
         } catch (error) {
             toast.error("Failed to fetch report");
             console.error(error);

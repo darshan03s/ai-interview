@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 dotenv.config({ override: true });
 import express, { Request, Response } from "express";
 import cors from "cors";
-import interviewRoutes from "./routes/interviewRoutes";
-import spellCheckRoutes from "./routes/spellCheckRoutes";
-import authenticate from "./middlewares/authenticate";
+import interviewRoutes from "@routes/interviewRoutes";
+import spellCheckRoutes from "@routes/spellCheckRoutes";
+import authenticate from "@middlewares/authenticate";
 
 const app = express();
 const PORT = process.env.PORT || 3000;

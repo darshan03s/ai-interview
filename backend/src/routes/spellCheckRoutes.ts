@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { spellCheckController } from "../controllers/spellCheckController";
+import { spellCheckController } from "@controllers/spellCheckController";
 
 const router = Router();
 

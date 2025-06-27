@@ -101,7 +101,6 @@ const Home = () => {
 
   const handleContinue = async () => {
     if (selectedPdf && selectedInterview) {
-      setCreatingInterview(true);
       const token = session?.access_token;
       const username = session?.user?.user_metadata.full_name;
       if (!token) {
@@ -109,23 +108,40 @@ const Home = () => {
         return;
       }
       try {
+        setCreatingInterview(true);
         const response = await createInterview(token, username, selectedPdf.file, selectedInterview, new Date().toLocaleString());
         if (!response.ok) {
-          toast.error('Failed to create interview, Bad response from server');
-          console.error('Failed to create interview, Bad response from server');
-          return;
+          if (response.status >= 400 && response.status < 500) {
+            toast.error('Unable to create interview. Client error')
+            console.error(`Failed to create interview: Client error (${response.status})`)
+            return
+          } else if (response.status >= 500) {
+            toast.error('Unable to create interview. Server error')
+            console.error(`Failed to create interview: Server error (${response.status})`)
+            return
+          }
+          toast.error('Unable to create interview. Unknown error')
+          console.error(`Failed to create interview: Unknown error (${response.status})`)
+          return
         }
+
         const interviewResponse = await response.json();
-        if (!interviewResponse.interview) {
-          toast.error('Failed to create interview, No interview ID returned');
-          console.error('Failed to create interview, No interview ID returned');
+        if (!interviewResponse.data) {
+          toast.error('Interview not found');
+          console.error('Interview not found');
           return;
         }
-        setInterview(interviewResponse.interview);
-        console.log('Interview created:', interviewResponse.interview);
+
+        if (interviewResponse.error) {
+          toast.error(interviewResponse.error.message);
+          console.error('Failed to create interview, Error from server:', interviewResponse.error);
+          return;
+        }
+
+        setInterview(interviewResponse.data);
       } catch (error) {
-        toast.error('Failed to create interview, Error from server');
-        console.error('Failed to create interview, Error from server:', error);
+        toast.error('Failed to create interview, Unknown error');
+        console.error('Failed to create interview, Unknown error:', error);
       } finally {
         setCreatingInterview(false);
         setShowSelectInterview(true);

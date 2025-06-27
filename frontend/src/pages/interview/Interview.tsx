@@ -1,7 +1,7 @@
 import { useAuth } from "@/features/auth";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { continueInterview, startInterview, getMessagesHistory, spellCheck } from "@/api";
+import { startInterview, continueInterview, getMessagesHistory, spellCheck } from "@/api";
 import type { InterviewType, MessageType } from "@/types";
 import { SendIcon, PlayIcon, Loader2, FileText, CirclePlay, SpellCheck, Mic } from "lucide-react";
 import { devDir, devLog } from "@/utils/devUtils";
@@ -12,7 +12,7 @@ import { useParams } from "react-router-dom";
 const Interview = () => {
     const { interviewId } = useParams();
     const [startedInterview, setStartedInterview] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [startingInterview, setStartingInterview] = useState<boolean>(false);
     const [isStreamingResponse, setIsStreamingResponse] = useState<boolean>(false);
     const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
     const { session, authLoading } = useAuth();
@@ -38,36 +38,52 @@ const Interview = () => {
         scrollToBottom();
     }, [messagesHistory]);
 
-
     const startInterviewWithAI = async () => {
-        setIsLoading(true);
         const token = session?.access_token;
         if (!token) {
+            toast.error('User not signed in');
             console.error('User not signed in');
             return;
         }
         try {
+            setStartingInterview(true);
             const response = await startInterview(token, interviewId!);
             if (!response.ok) {
-                toast.error('Failed to prepare interview, Bad response from server');
-                console.error('Failed to prepare interview, Bad response from server');
+                if (response.status >= 400 && response.status < 500) {
+                    toast.error('Unable to start interview. Client error')
+                    console.error(`Failed to start interview: Client error (${response.status})`)
+                    return
+                } else if (response.status >= 500) {
+                    toast.error('Unable to start interview. Server error')
+                    console.error(`Failed to start interview: Server error (${response.status})`)
+                    return
+                }
+                toast.error('Unable to start interview. Unknown error')
+                console.error(`Failed to start interview: Unknown error (${response.status})`)
+                return
+            }
+
+            const startInterviewResponse = await response.json();
+
+            if (startInterviewResponse.error) {
+                toast.error(startInterviewResponse.error.message);
+                console.error('Failed to start interview, Error from server:', startInterviewResponse.error);
                 return;
             }
-            const interviewResponse = await response.json();
 
-            if (!interviewResponse) {
-                toast.error('Failed to prepare interview');
-                console.error('Failed to prepare interview');
+            if (!startInterviewResponse) {
+                toast.error('Failed to start interview');
+                console.error('Failed to start interview');
                 return;
             }
 
-            setInterview(interviewResponse.interview);
+            setInterview(startInterviewResponse.data);
         } catch (error) {
-            toast.error('Failed to prepare interview, Error from server');
-            console.error('Failed to prepare interview, Error from server:', error);
+            toast.error('Failed to start interview, Unknown error');
+            console.error('Failed to start interview, Unknown error:', error);
         } finally {
+            setStartingInterview(false);
             setStartedInterview(true);
-            setIsLoading(false);
         }
     };
 
@@ -79,6 +95,7 @@ const Interview = () => {
         }
         const token = session?.access_token;
         if (!token) {
+            toast.error('User not signed in');
             console.error('User not signed in');
             return;
         }
@@ -88,23 +105,32 @@ const Interview = () => {
         setMessagesHistory(prev => [...prev, newUserMessage]);
         const currentMessage = userMessage;
         setUserMessage("");
-        setIsStreamingResponse(true);
         setCurrentStreamingMessage("");
 
         try {
+            setIsStreamingResponse(true);
             const response = await continueInterview(token, interviewId!, currentMessage);
 
             if (!response.ok) {
-                toast.error("Error sending prompt");
-                setIsStreamingResponse(false);
-                return;
+                if (response.status >= 400 && response.status < 500) {
+                    toast.error('Unable to send message. Client error')
+                    console.error(`Failed to send message: Client error (${response.status})`)
+                    return
+                } else if (response.status >= 500) {
+                    toast.error('Unable to send message. Server error')
+                    console.error(`Failed to send message: Server error (${response.status})`)
+                    return
+                }
+                toast.error('Unable to send message. Unknown error')
+                console.error(`Failed to send message: Unknown error (${response.status})`)
+                return
             }
 
             try {
                 const reader = response.body?.getReader();
                 if (!reader) {
                     toast.error("ReadableStream not supported");
-                    setIsStreamingResponse(false);
+                    console.error("ReadableStream not supported");
                     return;
                 }
 
@@ -127,11 +153,24 @@ const Interview = () => {
                     playAudioMessage(chunks);
                 }
                 setMessagesHistory(prev => [...prev, newModelMessage]);
+                if (chunks.includes("Thank you for your time. We will get back to you soon.")) {
+                    setInterview((prev) => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            is_completed: true
+                        };
+                    });
+                }
             } catch (error) {
                 const resJson = await response.json();
-                if (resJson.errorMessage) {
-                    toast.error(resJson.errorMessage);
-                    console.error('Failed to send message, Error from server:', resJson.errorMessage, error);
+                if (resJson.error) {
+                    toast.error(resJson.error.message);
+                    console.error('Failed to send message, Error from server:', resJson.error, error);
+                }
+
+                if (resJson.message) {
+                    toast.info(resJson.message);
                 }
             } finally {
                 setIsStreamingResponse(false);
@@ -139,8 +178,8 @@ const Interview = () => {
             }
 
         } catch (error) {
-            toast.error('Failed to send message, Error from server');
-            console.error('Failed to send message, Error from server:', error);
+            toast.error('Unknown error from server');
+            console.error('Unknown error from server:', error);
         } finally {
             setIsStreamingResponse(false);
             setCurrentStreamingMessage("");
@@ -148,9 +187,9 @@ const Interview = () => {
     }
 
     const getMessages = async () => {
-        console.log('fetching messages for ' + interviewId);
         const token = session?.access_token;
         if (!token) {
+            toast.error('User not signed in');
             console.error('User not signed in');
             return;
         }
@@ -159,10 +198,20 @@ const Interview = () => {
             setFetchingMessages(true);
             const response = await getMessagesHistory(token, interviewId!);
             if (!response.ok) {
-                toast.error('Failed to get messages, Bad response from server');
-                console.error('Failed to get messages, Bad response from server');
-                return;
+                if (response.status >= 400 && response.status < 500) {
+                    toast.error('Unable to fetch messages. Client error')
+                    console.error(`Failed to fetch messages: Client error (${response.status})`)
+                    return
+                } else if (response.status >= 500) {
+                    toast.error('Unable to fetch messages. Server error')
+                    console.error(`Failed to fetch messages: Server error (${response.status})`)
+                    return
+                }
+                toast.error('Unable to fetch messages. Unknown error')
+                console.error(`Failed to fetch messages: Unknown error (${response.status})`)
+                return
             }
+
             const messagesResponse = await response.json();
 
             if (!messagesResponse) {
@@ -171,11 +220,17 @@ const Interview = () => {
                 return;
             }
 
-            setMessagesHistory(messagesResponse.messagesHistory);
+            if (messagesResponse.error) {
+                toast.error(messagesResponse.error.message);
+                console.error('Failed to get messages, Error from server:', messagesResponse.error);
+                return;
+            }
+
+            setMessagesHistory(messagesResponse.data);
 
         } catch (error) {
-            toast.error('Failed to get messages, Error from server');
-            console.error('Failed to get messages, Error from server:', error);
+            toast.error('Failed to get messages, Unknown error');
+            console.error('Failed to get messages, Unknown error:', error);
         } finally {
             setFetchingMessages(false);
         }
@@ -232,6 +287,7 @@ const Interview = () => {
         }
         const token = session?.access_token;
         if (!token) {
+            toast.error('User not signed in');
             console.error('User not signed in');
             return;
         }
@@ -241,13 +297,22 @@ const Interview = () => {
             return;
         }
 
-        setSpellChecking(true);
         try {
+            setSpellChecking(true);
             const response = await spellCheck(token, userMessage);
             if (!response.ok) {
-                toast.error('Failed to spell check');
-                console.error('Failed to spell check');
-                return;
+                if (response.status >= 400 && response.status < 500) {
+                    toast.error('Unable to spell check. Client error')
+                    console.error(`Failed to spell check: Client error (${response.status})`)
+                    return
+                } else if (response.status >= 500) {
+                    toast.error('Unable to spell check. Server error')
+                    console.error(`Failed to spell check: Server error (${response.status})`)
+                    return
+                }
+                toast.error('Unable to spell check. Unknown error')
+                console.error(`Failed to spell check: Unknown error (${response.status})`)
+                return
             }
 
             const spellCheckResponse = await response.json();
@@ -258,10 +323,16 @@ const Interview = () => {
                 return;
             }
 
-            setUserMessage(spellCheckResponse.text);
+            if (spellCheckResponse.error) {
+                toast.error(spellCheckResponse.error.message);
+                console.error('Failed to spell check, Error from server:', spellCheckResponse.error);
+                return;
+            }
+
+            setUserMessage(spellCheckResponse.data);
         } catch (error) {
-            toast.error('Failed to spell check');
-            console.error('Failed to spell check', error);
+            toast.error('Failed to spell check, Unknown error');
+            console.error('Failed to spell check, Unknown error:', error);
         } finally {
             setSpellChecking(false);
         }
@@ -456,7 +527,7 @@ const Interview = () => {
         };
     }, []);
 
-    if (isLoading || !startedInterview) {
+    if (startingInterview || !startedInterview) {
         return (
             <div className="max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">

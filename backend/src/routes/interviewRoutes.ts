@@ -9,7 +9,7 @@ import {
     deleteInterviewController,
     renameInterviewController,
     getReportController,
-} from "../controllers/interviewControllers";
+} from "@controllers/interviewControllers";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });

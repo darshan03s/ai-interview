@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import supabase from "./supabase";
 import { Part } from "@google/genai";
-import { mdToPdf } from "../utils/mdToPdf";
+import { mdToPdf } from "@utils/mdToPdf";
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const fileId = nanoid();

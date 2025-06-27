@@ -10,7 +10,7 @@ export type InterviewType = {
     title: string;
     resume_url: string;
     username: string;
-    interview_type: InterviewType;
+    interview_type: SelectedInterviewType;
     is_completed: boolean;
 };
 
