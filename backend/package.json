@@ -16,16 +16,13 @@
     "dependencies": {
         "@google/genai": "^1.6.0",
         "@supabase/supabase-js": "^2.50.0",
-        "@types/multer": "^1.4.13",
         "cors": "^2.8.5",
         "dotenv": "^16.5.0",
         "express": "^5.1.0",
         "marked": "^15.0.12",
         "multer": "^2.0.1",
         "nanoid": "3",
-        "puppeteer": "^24.10.2",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.8.3"
+        "puppeteer": "^24.10.2"
     },
     "devDependencies": {
         "@eslint/js": "^9.29.0",
@@ -33,12 +30,15 @@
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.3",
         "@types/node": "^24.0.3",
+        "@types/multer": "^1.4.13",
         "@typescript-eslint/eslint-plugin": "^8.34.1",
         "@typescript-eslint/parser": "^8.34.1",
         "eslint": "^9.29.0",
         "globals": "^16.2.0",
         "nodemon": "^3.1.10",
         "prettier": "^3.5.3",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3",
         "typescript-eslint": "^8.34.1"
     }
 }

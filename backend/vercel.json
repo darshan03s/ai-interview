@@ -1,9 +1,21 @@
 {
     "version": 2,
+    "installCommand": "pnpm install --production --frozen-lockfile",
+    "buildCommand": null,
+    "builds": [
+        {
+            "src": "dist/index.js",
+            "use": "@vercel/node"
+        }
+    ],
     "routes": [
         {
             "src": "/(.*)",
             "dest": "dist/index.js"
         }
-    ]
+    ],
+    "env": {
+        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true",
+        "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome-stable"
+    }
 }
