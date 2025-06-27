@@ -1,10 +1,10 @@
-import { nanoid } from "nanoid";
 import supabase from "./supabase";
 import { Part } from "@google/genai";
 import { mdToPdf } from "@utils/mdToPdf";
 
 export const uploadFile = async (file: Express.Multer.File) => {
-    const fileId = nanoid();
+    const { nanoid: generateNanoid } = await import("nanoid");
+    const fileId = generateNanoid();
     const fileExtension = file.originalname.split(".")[1];
     const fileName = `${file.originalname.split(".")[0]}-${fileId}.${fileExtension}`;
     const { data, error } = await supabase.storage.from("resumes").upload(fileName, file.buffer, {

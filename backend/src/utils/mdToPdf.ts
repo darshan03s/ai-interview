@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer";
-import { marked } from "marked";
 
 export const mdToPdf = async (text: string) => {
+    const { marked } = await import("marked");
     const htmlString = marked(text);
     const styledHtml = `
       <style>
