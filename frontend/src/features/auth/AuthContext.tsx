@@ -4,7 +4,7 @@ import { createContext } from "react"
 type AuthContextType = {
     session: Session | null
     setSession: (session: Session | null) => void
-    signInWithGoogle: () => void
+    signInWithGoogle: () => Promise<void>
     signOut: () => void
     authLoading: boolean
 }
@@ -12,7 +12,7 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType>({
     session: null,
     setSession: () => { },
-    signInWithGoogle: () => { },
+    signInWithGoogle: () => Promise.resolve(),
     signOut: () => { },
     authLoading: true
 })

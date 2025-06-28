@@ -57,7 +57,7 @@ const Header = () => {
                 {/* Logo/Brand */}
                 <div className="flex items-center gap-4">
                     <Sidebar />
-                    <Link to="/" className="text-xl font-bold text-foreground">
+                    <Link to="/" className="text-lg sm:text-xl font-bold text-foreground">
                         InterviewBot
                     </Link>
                 </div>

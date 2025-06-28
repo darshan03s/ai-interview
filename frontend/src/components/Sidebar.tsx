@@ -114,8 +114,8 @@ const Sidebar = () => {
             </SheetTrigger>
             <SheetContent side="left" className='w-[300px]'>
                 <SheetHeader className='p-0'>
-                    <SheetTitle className='text-lg font-semibold text-center mt-4'>History</SheetTitle>
-                    <SheetDescription className='text-sm text-muted-foreground text-center'>Your previous interviews will appear here</SheetDescription>
+                    <SheetTitle className='text-xl font-semibold text-center mt-4'>History</SheetTitle>
+                    <SheetDescription className='text-xs md:text-sm text-muted-foreground text-center'>Your previous interviews will appear here</SheetDescription>
                 </SheetHeader>
                 <div className="history overflow-y-auto flex flex-col gap-3 hide-scrollbar px-2">
                     {interviews?.length === 0 && (
@@ -130,7 +130,7 @@ const Sidebar = () => {
                                 className={`font-medium text-foreground hover:text-primary transition-colors flex-1 min-w-0 `}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <span className='truncate block'>
+                                        <span className='truncate block text-sm md:text-base'>
                                             {interview.title}
                                         </span>
                                     </TooltipTrigger>
