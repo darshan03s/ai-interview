@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/components/ui/button";
 import { createInterview } from "@/api";
@@ -8,6 +8,19 @@ import { useNavigate } from "react-router-dom";
 import SignInModal from "./components/SignInModal";
 import FileUpload from "./components/FileUpload";
 import SelectInterviewSection from "./components/SelectInterviewSection";
+
+const CTA = memo(() => {
+  return (
+    <div className="text-center max-w-xl md:max-w-4xl mx-auto flex flex-col gap-3">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground whitespace-wrap md:whitespace-nowrap px-3 md:px-0">
+        Master Your Next Interview with AI-Powered Practice
+      </h1>
+      <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+        Upload your resume to get started.
+      </p>
+    </div>
+  );
+});
 
 const Home = () => {
   const { session, signInWithGoogle, authLoading } = useAuth();
@@ -89,7 +102,7 @@ const Home = () => {
     if (interview) {
       navigate(`/interview/${interview.interview_id}`);
     }
-  }, [interview]);
+  }, [interview, navigate]);
 
   useEffect(() => {
     window.scrollTo({
@@ -100,24 +113,14 @@ const Home = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-3 min-h-[calc(100vh-4rem)] flex flex-col justify-center">
-      {/* CTA Section */}
-      <div className="text-center max-w-xl md:max-w-4xl mx-auto flex flex-col gap-3">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground whitespace-wrap md:whitespace-nowrap px-3 md:px-0">
-          Master Your Next Interview with AI-Powered Practice
-        </h1>
-        <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-          Upload your resume to get started.
-        </p>
-      </div>
+      <CTA />
 
-      {/* File Upload Section */}
       <FileUpload
         selectedPdf={selectedPdf}
         setSelectedPdf={setSelectedPdf}
         setShowSignInModal={setShowSignInModal}
       />
 
-      {/* Select Interview Section */}
       {showSelectInterview && (
         <SelectInterviewSection
           selectedInterview={selectedInterview}
@@ -126,7 +129,6 @@ const Home = () => {
       )}
 
 
-      {/* Continue Button */}
       {selectedPdf && selectedInterview && (
         <div className="flex justify-center my-4">
           <Button

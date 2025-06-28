@@ -1,3 +1,8 @@
+import { scan } from "react-scan";
+scan({
+  enabled: true,
+});
+
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "@/App";

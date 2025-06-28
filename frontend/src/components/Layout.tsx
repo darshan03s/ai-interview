@@ -12,7 +12,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link, Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
+import Sidebar from "./sidebar/Sidebar";
 
 const Header = () => {
     const { session, signInWithGoogle, signOut, authLoading } = useAuth();
