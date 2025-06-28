@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { Home, Interview } from "@/pages";
 import { Toaster } from "./components/ui/sonner";
-import Layout from "./components/Layout";
+import Layout from "./components/layout/Layout";
 
 const App = () => {
   return (
