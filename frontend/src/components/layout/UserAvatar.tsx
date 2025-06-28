@@ -88,10 +88,6 @@ const UserAvatar = memo(({ session, onSignOut }: UserAvatarProps) => {
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onSignOut} className="p-2">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
-                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
