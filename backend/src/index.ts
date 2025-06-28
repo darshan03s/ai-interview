@@ -7,7 +7,6 @@ import spellCheckRoutes from "@routes/spellCheckRoutes";
 import testRoutes from "@routes/testRoutes";
 import authenticate from "@middlewares/authenticate";
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,6 +26,10 @@ app.use("/interview", authenticate, interviewRoutes);
 app.use("/spell-check", authenticate, spellCheckRoutes);
 app.use("/test", testRoutes);
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running at ${PORT}`);
 });
+
+export default app;
+module.exports = app;

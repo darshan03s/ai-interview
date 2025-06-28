@@ -3,12 +3,11 @@
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
-    "type": "commonjs",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node dist/index.js",
         "dev": "nodemon --config nodemon.json",
-        "build": "tsc"
+        "build": "tsc && tsc-alias"
     },
     "keywords": [],
     "author": "",
@@ -39,6 +38,7 @@
         "nodemon": "^3.1.10",
         "prettier": "^3.6.2",
         "ts-node": "^10.9.2",
+        "tsc-alias": "^1.8.16",
         "tsconfig-paths": "^4.2.0",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.35.0"
