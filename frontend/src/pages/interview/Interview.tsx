@@ -470,18 +470,18 @@ const Interview = () => {
     }, [interviewId]);
 
     useEffect(() => {
-        // if (import.meta.env.DEV) {
-        //     if (startedInterview) return
-        // }
+        if (import.meta.env.DEV) {
+            if (startedInterview) return
+        }
         if (!authLoading && interviewId) {
             startInterviewWithAI();
         }
     }, [authLoading, interviewId, startedInterview]);
 
     useEffect(() => {
-        // if (import.meta.env.DEV) {
-        //     if (messagesHistory.length > 0) return
-        // }
+        if (import.meta.env.DEV) {
+            if (messagesHistory.length > 0) return
+        }
         if (startedInterview && interviewId) {
             getMessages();
         }
@@ -546,8 +546,8 @@ const Interview = () => {
 
     return (
         <div className="interview-container flex flex-col justify-center gap-12 py-4">
-            <div className="interview-container-conversation flex flex-col lg:flex-row items-center justify-center gap-4 mx-8 flex-1">
-                <div className="interview-container-conversation-messages w-full lg:w-2/3 space-y-2 flex flex-col gap-2 max-h-[calc(100vh-18rem)] h-[calc(100vh-18rem)] lg:max-h-[calc(100vh-6rem)] lg:h-[calc(100vh-6rem)]">
+            <div className="interview-container-conversation flex flex-col xl:flex-row items-center justify-center gap-4 mx-4 md:mx-8 flex-1">
+                <div className="interview-container-conversation-messages w-full xl:w-2/3 space-y-2 flex flex-col gap-2 max-h-[calc(100vh-18rem)] h-[calc(100vh-18rem)] xl:max-h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
                     <div className="resume-url flex items-center justify-center gap-2 h-4">
                         <a
                             href={interview?.resume_url}
@@ -582,12 +582,12 @@ const Interview = () => {
                                             </div>
                                             :
                                             messagesHistory.map((message, index) => (
-                                                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs lg:text-base`}>
+                                                <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs xl:text-base`}>
                                                     {message.role === 'model' && (
                                                         <div className="flex items-start gap-1">
-                                                            <div className="w-4 h-4 lg:w-6 lg:h-6 
-                                                            p-3 lg:p-4
-                                                            rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs lg:text-sm shrink-0">
+                                                            <div className="w-4 h-4 xl:w-6 xl:h-6 
+                                                            p-3 xl:p-4
+                                                            rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0">
                                                                 AI
                                                             </div>
                                                             <div className="flex flex-col gap-2">
@@ -615,9 +615,9 @@ const Interview = () => {
                                                                     </p>
                                                                 </div>
                                                             </div>
-                                                            <div className="w-4 h-4 lg:w-6 lg:h-6 
-                                                            p-3 lg:p-4
-                                                            rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-xs lg:text-sm shrink-0">
+                                                            <div className="w-4 h-4 xl:w-6 xl:h-6 
+                                                            p-3 xl:p-4
+                                                            rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold text-xs xl:text-sm shrink-0">
                                                                 {interview?.username?.[0]?.toUpperCase() || 'U'}
                                                             </div>
                                                         </div>
@@ -651,19 +651,19 @@ const Interview = () => {
                 </div>
 
                 {/* Input Section */}
-                <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 flex flex-col w-full lg:h-[-webkit-fill-available]">
-                    <div className="p-3 pb-0 lg:pb-3 flex-1">
+                <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 flex flex-col w-full xl:h-[-webkit-fill-available]">
+                    <div className="p-3 pb-0 xl:pb-3 flex-1">
                         <textarea
                             value={userMessage}
                             onChange={(e) => setUserMessage(e.target.value)}
                             onKeyDown={handleKeyPress}
                             placeholder="Type your answer here..."
-                            className="w-full text-xs lg:text-base hide-scrollbar bg-transparent resize-none outline-none placeholder:text-muted-foreground h-25 lg:h-full leading-relaxed"
+                            className="w-full text-xs xl:text-base hide-scrollbar bg-transparent resize-none outline-none placeholder:text-muted-foreground h-25 xl:h-full leading-relaxed"
                             disabled={isStreamingResponse}
                         />
                     </div>
                     <div className="px-3 py-3 flex items-center justify-between">
-                        <div className="text-xs text-muted-foreground hidden lg:flex items-center gap-2">
+                        <div className="text-xs text-muted-foreground hidden xl:flex items-center gap-2">
                             <span>Enter to send • Shift+Enter for new line</span>
                         </div>
                         <div className="flex items-center gap-2">
