@@ -61,8 +61,8 @@ const Report = ({ interviewId }: { interviewId: string }) => {
     }, []);
 
     return (
-        <div className="report-section border border-primary/50 dark:border-primary/50 max-w-6xl w-full flex-1 mx-auto p-2 rounded-lg flex flex-col gap-4">
-            <h1 className="text-4xl font-bold text-center">Report</h1>
+        <div className="report-section border border-primary/50 dark:border-primary/50 max-w-[90%] w-full flex-1 mx-auto p-3 py-6 rounded-lg flex flex-col gap-2">
+            <h1 className="text-2xl md:text-4xl font-bold text-center">Report</h1>
             {report?.is_created ?
                 null
                 :
@@ -74,9 +74,9 @@ const Report = ({ interviewId }: { interviewId: string }) => {
                 <a
                     href={report?.report_pdf}
                     target="_blank"
-                    className="inline-flex items-center w-full justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
+                    className="inline-flex items-center w-full justify-center gap-2 text-xs md:text-sm text-muted-foreground hover:text-primary transition-colors group mx-auto"
                 >
-                    <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                    <FileText className="h-3 w-3 md:h-4 md:w-4 group-hover:scale-110 transition-transform" />
                     Download report
                 </a>
 
