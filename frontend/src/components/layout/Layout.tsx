@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
+import { memo } from "react";
 
 const Layout = () => {
     return (
@@ -14,4 +15,4 @@ const Layout = () => {
     );
 };
 
-export default Layout;
+export default memo(Layout);
