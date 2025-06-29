@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import MarkdownRenderer from "./MarkdownRenderer";
-import { FileText } from "lucide-react";
+// import { FileText } from "lucide-react";
 import type useInterview from "../hooks/useInterview";
 import { memo, useEffect, useRef } from "react";
 
@@ -22,10 +22,10 @@ const Report = ({ report, fetchingReport, fetchReport }: ReportProps) => {
                 null
                 :
                 <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!" onClick={fetchReport} disabled={fetchingReport || report?.is_created}>
-                    {fetchingReport ? "Generating report..." : "Get report"}
+                    {fetchingReport ? "Fetching report..." : "Get report"}
                 </Button>
             }
-            {report?.is_created ?
+            {/* {report?.is_created ?
                 <a
                     href={report?.report_pdf}
                     target="_blank"
@@ -35,8 +35,8 @@ const Report = ({ report, fetchingReport, fetchReport }: ReportProps) => {
                     Download report
                 </a>
 
-                : null}
-            <hr className="px-4" />
+                : null} */}
+            <hr className="px-4 my-4" />
             <div className="report-content min-h-[600px] overflow-y-auto hide-scrollbar w-full">
                 <MarkdownRenderer report={report?.report} />
             </div>

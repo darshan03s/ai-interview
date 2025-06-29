@@ -10,7 +10,7 @@ import {
     getReport,
     createReport,
     updateReport,
-    uploadReport,
+    // uploadReport,
     updateInterview,
 } from "@db/supabaseUtils";
 import gemini from "@llm/gemini";
@@ -315,8 +315,6 @@ export async function getMessagesController(req: Request, res: Response<ApiRespo
 
         messagesHistory = messagesHistory.slice(1);
 
-        console.log(messagesHistory);
-
         res.status(200).json({
             success: true,
             message: "Messages fetched successfully",
@@ -500,15 +498,16 @@ export async function getReportController(req: Request, res: Response<ApiRespons
             });
             return;
         }
-        const reportUrl = await uploadReport(interview_id, report);
-        if (!reportUrl) {
-            res.status(500).json({
-                success: false,
-                error: { code: "ERROR_UPLOADING_REPORT", message: "Error uploading report" },
-            });
-            return;
-        }
-        report = await updateReport(user.id, interview_id, report, reportUrl, true);
+        // const reportUrl = await uploadReport(interview_id, report);
+        // if (!reportUrl) {
+        //     res.status(500).json({
+        //         success: false,
+        //         error: { code: "ERROR_UPLOADING_REPORT", message: "Error uploading report" },
+        //     });
+        //     return;
+        // }
+        // report = await updateReport(user.id, interview_id, report, reportUrl, true);
+        report = await updateReport(user.id, interview_id, report, "", true);
         if (!report) {
             res.status(500).json({
                 success: false,

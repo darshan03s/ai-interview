@@ -2,18 +2,16 @@
     "version": 2,
     "builds": [
         {
-            "src": "src/index.ts",
+            "src": "dist/index.js",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "src/index.ts"
+            "dest": "dist/index.js"
         }
     ],
-    "env": {
-        "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true",
-        "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/google-chrome-stable"
-    }
+    "installCommand": "npm install",
+    "buildCommand": "npm run build"
 }

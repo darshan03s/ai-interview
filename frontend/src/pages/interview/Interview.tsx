@@ -73,7 +73,7 @@ const Interview = () => {
         if (interview?.is_completed) {
             fetchReport();
         }
-    }, [interview?.is_completed, fetchReport]);
+    }, [interview?.is_completed, report?.is_created, fetchReport]);
 
     if (isInterviewStarting || !isInterviewStarted) {
         return (

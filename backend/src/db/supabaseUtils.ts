@@ -1,6 +1,6 @@
 import supabase from "./supabase";
 import { Part } from "@google/genai";
-import { mdToPdf } from "@utils/mdToPdf";
+// import { mdToPdf } from "@utils/mdToPdf";
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const { nanoid: generateNanoid } = await import("nanoid");
@@ -124,11 +124,56 @@ export const getMessages = async (interview_id: string, user_id: string) => {
     return data;
 };
 
+const extractFilePathFromSignedUrl = (signedUrl: string): string | null => {
+    try {
+        const url = new URL(signedUrl);
+        const pathSegments = url.pathname.split("/");
+        const objectIndex = pathSegments.findIndex((segment) => segment === "object");
+
+        if (objectIndex !== -1 && pathSegments[objectIndex + 1] === "sign") {
+            const filePath = pathSegments.slice(objectIndex + 2).join("/");
+            return decodeURIComponent(filePath);
+        }
+
+        return null;
+    } catch (error) {
+        console.error("Error extracting file path from signed URL:", error);
+        return null;
+    }
+};
+
 export const deleteInterview = async (interview_id: string) => {
+    const { data: interviewData, error: getError } = await supabase
+        .from("interviews")
+        .select("resume_url")
+        .eq("interview_id", interview_id)
+        .single();
+
+    if (getError) {
+        console.error("Error getting interview for deletion:", getError);
+        return null;
+    }
+
+    if (interviewData?.resume_url) {
+        const filePath = extractFilePathFromSignedUrl(interviewData.resume_url);
+        if (filePath) {
+            const { error: deleteFileError } = await supabase.storage
+                .from("resumes")
+                .remove([filePath]);
+
+            if (deleteFileError) {
+                console.error("Error deleting resume file:", deleteFileError);
+            } else {
+                console.log("Successfully deleted resume file:", filePath);
+            }
+        }
+    }
+
     const { data, error } = await supabase
         .from("interviews")
         .delete()
         .eq("interview_id", interview_id);
+
     if (error) {
         console.error("Error deleting interview:", error);
         return null;
@@ -219,24 +264,24 @@ export const updateReport = async (
     return data;
 };
 
-export const uploadReport = async (interview_id: string, report: string) => {
-    const pdf = await mdToPdf(report);
-    const pdfName = `${interview_id}-report.pdf`;
-    const { data, error } = await supabase.storage.from("reports").upload(pdfName, pdf, {
-        contentType: "application/pdf",
-    });
-    if (error) {
-        console.error("Error uploading report:", error);
-        return null;
-    }
-    const expiresIn = 3600 * 24 * 30; // 30 days
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from("reports")
-        .createSignedUrl(data.path, expiresIn);
-    if (signedUrlError) {
-        console.error("Error creating signed URL:", signedUrlError);
-        return null;
-    }
+// export const uploadReport = async (interview_id: string, report: string) => {
+//     const pdf = await mdToPdf(report);
+//     const pdfName = `${interview_id}-report.pdf`;
+//     const { data, error } = await supabase.storage.from("reports").upload(pdfName, pdf, {
+//         contentType: "application/pdf",
+//     });
+//     if (error) {
+//         console.error("Error uploading report:", error);
+//         return null;
+//     }
+//     const expiresIn = 3600 * 24 * 30; // 30 days
+//     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+//         .from("reports")
+//         .createSignedUrl(data.path, expiresIn);
+//     if (signedUrlError) {
+//         console.error("Error creating signed URL:", signedUrlError);
+//         return null;
+//     }
 
-    return signedUrlData.signedUrl;
-};
+//     return signedUrlData.signedUrl;
+// };
