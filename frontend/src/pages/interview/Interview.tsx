@@ -8,9 +8,14 @@ import DisplayMessages from "./components/DisplayMessages";
 import UserInputArea from "./components/UserInputArea";
 import useTTS from "./hooks/useTTS";
 import useSpellCheck from "./hooks/useSpellCheck";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@/features/auth";
+import { devLog } from "@/utils/devUtils";
 
 const Interview = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const { interviewId } = useParams();
+    const { authLoading } = useAuth();
 
     const {
         interview,
@@ -28,7 +33,11 @@ const Interview = () => {
         setUserMessage,
         report,
         fetchingReport,
-        fetchReport
+        fetchReport,
+        startInterviewWithAI,
+        getMessages,
+        isInterviewCompleted,
+        setIsInterviewCompleted,
     } = useInterview();
 
     const {
@@ -48,11 +57,31 @@ const Interview = () => {
         }
     }, [messagesHistory]);
 
+    useEffect(() => {
+        if (!authLoading && interviewId) {
+            startInterviewWithAI();
+        }
+    }, [authLoading, interviewId, startInterviewWithAI]);
+
+    useEffect(() => {
+        if (isInterviewStarted && interviewId) {
+            getMessages();
+        }
+    }, [isInterviewStarted, interviewId, getMessages]);
+
+    useEffect(() => {
+        if (interview?.is_completed) {
+            fetchReport();
+        }
+    }, [interview?.is_completed, fetchReport]);
+
     if (isInterviewStarting || !isInterviewStarted) {
         return (
             <PageLoading />
         );
     }
+
+    devLog(interview?.is_completed, isInterviewCompleted);
 
     return (
         <div className="flex flex-col justify-center gap-12 py-4">
@@ -90,16 +119,18 @@ const Interview = () => {
                     toggleAutoPlayTTS={toggleAutoPlayTTS}
                     aiSpellCheck={aiSpellCheck}
                     isSpellChecking={isSpellChecking}
+                    setIsInterviewCompleted={setIsInterviewCompleted}
+                    isInterviewCompleted={isInterviewCompleted}
                 />
             </div>
 
-            {interview?.is_completed && (
+            {interview?.is_completed || isInterviewCompleted ? (
                 <Report
                     report={report}
                     fetchingReport={fetchingReport}
                     fetchReport={fetchReport}
                 />
-            )}
+            ) : null}
         </div>
     );
 };

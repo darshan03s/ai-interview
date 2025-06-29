@@ -1,7 +1,7 @@
 import { continueInterview, getMessagesHistory, getReport, startInterview } from "@/api";
 import { useAuth } from "@/features/auth";
 import type { InterviewType, MessageType, ReportType } from "@/types";
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
 import useTTS from "./useTTS";
 import { useParams } from "react-router-dom";
@@ -14,14 +14,15 @@ export default function useInterview() {
     const [isInterviewStarted, setIsInterviewStarted] = useState<boolean>(false);
     const [interview, setInterview] = useState<InterviewType | null>(null);
     const [isStreamingResponse, setIsStreamingResponse] = useState<boolean>(false);
-    const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
-    const [messagesHistory, setMessagesHistory] = useState<MessageType[]>([]);
     const [isFetchingMessages, setIsFetchingMessages] = useState<boolean>(false);
+    const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>("");
+    const [isRecording, setIsRecording] = useState<boolean>(false);
+    const [messagesHistory, setMessagesHistory] = useState<MessageType[]>([]);
     const [userMessage, setUserMessage] = useState<string>("");
     const finalTranscriptRef = useRef<string>("");
-    const [isRecording, setIsRecording] = useState<boolean>(false);
     const [report, setReport] = useState<ReportType | undefined>();
     const [fetchingReport, setFetchingReport] = useState(false);
+    const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
 
     const { playAudioMessage, autoPlayTTS, recognitionRef } = useTTS();
 
@@ -146,13 +147,8 @@ export default function useInterview() {
                 }
                 setMessagesHistory((prev) => [...prev, newModelMessage]);
                 if (chunks.includes("Thank you for your time. We will get back to you soon.")) {
-                    setInterview((prev) => {
-                        if (!prev) return null;
-                        return {
-                            ...prev,
-                            is_completed: true,
-                        };
-                    });
+                    toast.info("Interview completed");
+                    setIsInterviewCompleted(true);
                 }
             } catch (error) {
                 const resJson = await response.json();
@@ -386,24 +382,6 @@ export default function useInterview() {
         }
     }, [authLoading, session?.access_token, interviewId]);
 
-    useEffect(() => {
-        if (!authLoading && interviewId) {
-            startInterviewWithAI();
-        }
-    }, [authLoading, interviewId, startInterviewWithAI]);
-
-    useEffect(() => {
-        if (isInterviewStarted && interviewId) {
-            getMessages();
-        }
-    }, [isInterviewStarted, interviewId, getMessages]);
-
-    useEffect(() => {
-        if (interview?.is_completed) {
-            fetchReport();
-        }
-    }, [interview?.is_completed, fetchReport]);
-
     return {
         startInterviewWithAI,
         isInterviewStarting,
@@ -425,5 +403,8 @@ export default function useInterview() {
         fetchReport,
         fetchingReport,
         report,
+        setInterview,
+        isInterviewCompleted,
+        setIsInterviewCompleted,
     };
 }

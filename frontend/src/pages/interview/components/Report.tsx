@@ -2,15 +2,22 @@ import { Button } from "@/components/ui/button";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { FileText } from "lucide-react";
 import type useInterview from "../hooks/useInterview";
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 
 type ReportProps = Pick<ReturnType<typeof useInterview>, 'report' | 'fetchingReport' | 'fetchReport'>;
 
 const Report = ({ report, fetchingReport, fetchReport }: ReportProps) => {
+    const reportTitleRef = useRef<HTMLHeadingElement>(null);
+
+    useEffect(() => {
+        if (reportTitleRef.current) {
+            reportTitleRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [report]);
 
     return (
         <div className="report-section border border-primary/50 dark:border-primary/50 max-w-[90%] w-full flex-1 mx-auto p-3 py-6 rounded-lg flex flex-col gap-2">
-            <h1 className="text-2xl md:text-4xl font-bold text-center">Report</h1>
+            <h1 ref={reportTitleRef} className="text-2xl md:text-4xl font-bold text-center">Report</h1>
             {report?.is_created ?
                 null
                 :
