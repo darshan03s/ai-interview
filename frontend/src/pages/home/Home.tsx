@@ -135,7 +135,7 @@ const Home = () => {
           <Button
             onClick={handleContinue}
             size="lg"
-            className={`min-w-32 ${creatingInterview || !selectedInterview ? 'opacity-50 cursor-not-allowed!' : ''}`}
+            className={`min-w-32 disabled:opacity-50 disabled:cursor-not-allowed!`}
             disabled={creatingInterview || !selectedInterview}
           >
             {creatingInterview ? 'Creating Interview...' : 'Continue'}

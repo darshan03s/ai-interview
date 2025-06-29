@@ -4,6 +4,7 @@ import useInterview from "../hooks/useInterview"
 import useTTS from "../hooks/useTTS"
 import useSpellCheck from "../hooks/useSpellCheck"
 import { memo } from "react";
+
 type UserInputAreaProps = Pick<ReturnType<typeof useInterview>,
     'userMessage' | 'setUserMessage' | 'handleSendMessage' | 'isStreamingResponse' | 'handleVoiceInput' | 'interview' | 'isRecording' | 'sendMessage'
 > & Pick<ReturnType<typeof useTTS>, 'autoPlayTTS' | 'toggleAutoPlayTTS'> & Pick<ReturnType<typeof useSpellCheck>, 'aiSpellCheck' | 'isSpellChecking'>;

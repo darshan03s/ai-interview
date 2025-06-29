@@ -1,6 +1,6 @@
 import { SidebarIcon } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getInterviews, deleteInterview, renameInterview } from '@/api'
 import type { InterviewType } from '@/types'
@@ -16,6 +16,7 @@ import RenameDialog from './RenameDialog'
 const Sidebar = () => {
     const { session, authLoading } = useAuth()
     const { interviewId } = useParams()
+    const navigate = useNavigate()
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
     const [deletingInterviewId, setDeletingInterviewId] = useState<string | null>(null)
@@ -44,6 +45,9 @@ const Sidebar = () => {
             console.error(error)
         } finally {
             setDeletingInterview(false)
+            if (interviewId === deletingInterviewId) {
+                navigate('/')
+            }
         }
     }
 

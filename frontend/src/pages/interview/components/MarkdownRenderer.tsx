@@ -2,6 +2,7 @@ import Markdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import rehypeRaw from "rehype-raw"
 import { memo } from "react";
+
 const MarkdownRenderer = ({ report }: { report: string | undefined }) => {
     if (!report) return null;
     return (

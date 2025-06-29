@@ -55,6 +55,8 @@ export async function createInterviewController(req: Request, res: Response<ApiR
         return;
     }
 
+    console.log("Creating interview for user:", user.id);
+
     const title = `${interview_type.charAt(0).toUpperCase() + interview_type.slice(1)} Interview - ${date}`;
 
     const interview = await createInterview(user.id, username, file, interview_type, title);
@@ -102,6 +104,8 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
         });
         return;
     }
+
+    console.log("Starting interview for user:", user.id, interview_id);
 
     try {
         const messagesHistory = await getMessages(interview_id, user.id);
@@ -193,6 +197,8 @@ export async function continueInterviewController(req: Request, res: Response<Ap
         });
         return;
     }
+
+    console.log("Continuing interview for user:", user.id, interview_id);
 
     try {
         const messagesHistory = await getMessages(interview_id, user.id);
@@ -287,6 +293,8 @@ export async function getMessagesController(req: Request, res: Response<ApiRespo
         return;
     }
 
+    console.log("Getting messages for user:", user.id, interview_id);
+
     try {
         const messages = await getMessages(interview_id, user.id);
         if (!messages) {
@@ -306,6 +314,8 @@ export async function getMessagesController(req: Request, res: Response<ApiRespo
         });
 
         messagesHistory = messagesHistory.slice(1);
+
+        console.log(messagesHistory);
 
         res.status(200).json({
             success: true,
@@ -331,6 +341,8 @@ export async function getInterviewsController(req: Request, res: Response<ApiRes
         });
         return;
     }
+
+    console.log("Getting interviews for user:", user.id);
 
     try {
         const interviews = await getInterviews(user.id);
@@ -450,6 +462,8 @@ export async function getReportController(req: Request, res: Response<ApiRespons
     }
 
     let report;
+
+    console.log("Getting report for user:", user.id, interview_id);
 
     report = await getReport(user.id, interview_id);
     if (report && report.is_created) {
