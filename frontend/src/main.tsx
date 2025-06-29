@@ -1,7 +1,12 @@
-import { scan } from "react-scan";
-scan({
-  enabled: true,
-});
+import { isDevMode } from "./utils/devUtils";
+
+if (isDevMode) {
+  import("react-scan").then(({ scan }) => {
+    scan({
+      enabled: true,
+    });
+  });
+}
 
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
