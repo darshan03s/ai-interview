@@ -28,10 +28,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     async function signInWithGoogle() {
         if (window.location.hostname === "localhost") {
+            const port = window.location.port;
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: 'http://localhost:5173'
+                    redirectTo: `http://localhost:${port}`
                 }
             });
 
