@@ -12,10 +12,10 @@ import SelectInterviewSection from "./components/SelectInterviewSection";
 const CTA = memo(() => {
   return (
     <div className="text-center max-w-xl md:max-w-full mx-auto flex flex-col gap-3">
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground whitespace-wrap lg:whitespace-nowrap px-3 md:px-0">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary whitespace-wrap lg:whitespace-nowrap px-3 md:px-0">
         Master Your Next Interview with AI-Powered Practice
       </h1>
-      <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+      <p className="text-sm sm:text-base md:text-md text-muted-foreground max-w-2xl mx-auto">
         Upload your resume to get started.
       </p>
     </div>
