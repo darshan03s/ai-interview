@@ -118,8 +118,8 @@ const Interview = () => {
                         <Badge variant="secondary" className="p-2.5 text-xs ">
                             {interview?.interview_type ? `${interview.interview_type.charAt(0).toUpperCase() + interview.interview_type.slice(1)} Interview` : "Interview"}
                         </Badge>
-                        <Badge variant={interview?.is_completed ? "default" : "secondary"} className="p-2.5 text-xs">
-                            {interview?.is_completed ? "Completed" : "In Progress"}
+                        <Badge variant={interview?.is_completed || isInterviewCompleted ? "default" : "secondary"} className="p-2.5 text-xs">
+                            {interview?.is_completed || isInterviewCompleted ? "Completed" : "In Progress"}
                         </Badge>
                         <Badge variant="secondary" className="p-2.5">
                             Created at: {interview?.created_at ? new Date(interview.created_at).toLocaleDateString() : "N/A"}

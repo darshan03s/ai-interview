@@ -8,12 +8,12 @@ export const createInterview = async (
     date: string
 ) => {
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("username", username);
-    formData.append("interview_type", interviewType);
-    formData.append("date", date);
+    formData.append('file', file);
+    formData.append('username', username);
+    formData.append('interview_type', interviewType);
+    formData.append('date', date);
     const response = await fetch(`${BASE_URL}/interview/create-interview`, {
-        method: "POST",
+        method: 'POST',
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -25,9 +25,9 @@ export const createInterview = async (
 
 export const startInterview = async (token: string, interviewId: string) => {
     const response = await fetch(`${BASE_URL}/interview/start-interview`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -40,9 +40,9 @@ export const startInterview = async (token: string, interviewId: string) => {
 
 export const continueInterview = async (token: string, interviewId: string, message: string) => {
     const response = await fetch(`${BASE_URL}/interview/continue-interview`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -56,9 +56,9 @@ export const continueInterview = async (token: string, interviewId: string, mess
 
 export const getMessagesHistory = async (token: string, interviewId: string) => {
     const response = await fetch(`${BASE_URL}/interview/get-messages`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -71,9 +71,9 @@ export const getMessagesHistory = async (token: string, interviewId: string) => 
 
 export const getInterviews = async (token: string) => {
     const response = await fetch(`${BASE_URL}/interview/get-interviews`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
     });
@@ -83,9 +83,9 @@ export const getInterviews = async (token: string) => {
 
 export const deleteInterview = async (token: string, interviewId: string) => {
     const response = await fetch(`${BASE_URL}/interview/delete-interview`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -98,9 +98,9 @@ export const deleteInterview = async (token: string, interviewId: string) => {
 
 export const renameInterview = async (token: string, interviewId: string, newName: string) => {
     const response = await fetch(`${BASE_URL}/interview/rename-interview`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -114,9 +114,9 @@ export const renameInterview = async (token: string, interviewId: string, newNam
 
 export const spellCheck = async (token: string, text: string) => {
     const response = await fetch(`${BASE_URL}/spell-check`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -129,9 +129,24 @@ export const spellCheck = async (token: string, text: string) => {
 
 export const getReport = async (token: string, interviewId: string) => {
     const response = await fetch(`${BASE_URL}/interview/get-report`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            interview_id: interviewId,
+        }),
+    });
+
+    return response;
+};
+
+export const endInterview = async (token: string, interviewId: string) => {
+    const response = await fetch(`${BASE_URL}/interview/end-interview`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
