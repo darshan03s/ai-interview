@@ -10,7 +10,8 @@ import useTTS from "./hooks/useTTS";
 import useSpellCheck from "./hooks/useSpellCheck";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
-import { devLog } from "@/utils/devUtils";
+import { devLog, isDevMode } from "@/utils/devUtils";
+import { Badge } from "@/components/ui/badge";
 
 const Interview = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -59,11 +60,17 @@ const Interview = () => {
 
     useEffect(() => {
         if (!authLoading && interviewId) {
+            if (isDevMode) {
+                if (isInterviewStarted) return;
+            }
             startInterviewWithAI();
         }
     }, [authLoading, interviewId, startInterviewWithAI]);
 
     useEffect(() => {
+        if (isDevMode) {
+            if (messagesHistory.length > 0) return;
+        }
         if (isInterviewStarted && interviewId) {
             getMessages();
         }
@@ -106,22 +113,37 @@ const Interview = () => {
                 </div>
 
                 {/* Input Section */}
-                <UserInputArea
-                    userMessage={userMessage}
-                    setUserMessage={setUserMessage}
-                    handleSendMessage={handleSendMessage}
-                    isStreamingResponse={isStreamingResponse}
-                    handleVoiceInput={handleVoiceInput}
-                    interview={interview}
-                    isRecording={isRecording}
-                    sendMessage={sendMessage}
-                    autoPlayTTS={autoPlayTTS}
-                    toggleAutoPlayTTS={toggleAutoPlayTTS}
-                    aiSpellCheck={aiSpellCheck}
-                    isSpellChecking={isSpellChecking}
-                    setIsInterviewCompleted={setIsInterviewCompleted}
-                    isInterviewCompleted={isInterviewCompleted}
-                />
+                <div className="xl:h-[-webkit-fill-available] flex flex-col gap-2 space-y-2">
+                    <div className="interview-user-info h-4 flex space-x-2">
+                        <Badge variant="secondary" className="p-2.5 text-xs ">
+                            {interview?.interview_type ? `${interview.interview_type.charAt(0).toUpperCase() + interview.interview_type.slice(1)} Interview` : "Interview"}
+                        </Badge>
+                        <Badge variant={interview?.is_completed ? "default" : "secondary"} className="p-2.5 text-xs">
+                            {interview?.is_completed ? "Completed" : "In Progress"}
+                        </Badge>
+                        <Badge variant="secondary" className="p-2.5">
+                            Created at: {interview?.created_at ? new Date(interview.created_at).toLocaleDateString() : "N/A"}
+                        </Badge>
+                    </div>
+                    <div className="flex-1">
+                        <UserInputArea
+                            userMessage={userMessage}
+                            setUserMessage={setUserMessage}
+                            handleSendMessage={handleSendMessage}
+                            isStreamingResponse={isStreamingResponse}
+                            handleVoiceInput={handleVoiceInput}
+                            interview={interview}
+                            isRecording={isRecording}
+                            sendMessage={sendMessage}
+                            autoPlayTTS={autoPlayTTS}
+                            toggleAutoPlayTTS={toggleAutoPlayTTS}
+                            aiSpellCheck={aiSpellCheck}
+                            isSpellChecking={isSpellChecking}
+                            setIsInterviewCompleted={setIsInterviewCompleted}
+                            isInterviewCompleted={isInterviewCompleted}
+                        />
+                    </div>
+                </div>
             </div>
 
             {interview?.is_completed || isInterviewCompleted ? (

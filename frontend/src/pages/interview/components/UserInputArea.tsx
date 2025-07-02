@@ -33,7 +33,7 @@ const UserInputArea = (
         setIsInterviewCompleted(true);
     }
     return (
-        <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex-1 flex flex-col w-full xl:h-[-webkit-fill-available]">
+        <div className="bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-hidden flex flex-col h-full">
             <div className="p-3 pb-0 xl:pb-3 flex-1">
                 <textarea
                     value={userMessage}
