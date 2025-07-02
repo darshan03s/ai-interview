@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useParams } from 'react-router-dom';
 
 export default function useTTS() {
     const { interviewId } = useParams();
@@ -10,8 +10,8 @@ export default function useTTS() {
 
     const playAudioMessage = async (message: string): Promise<void> => {
         try {
-            if (!("speechSynthesis" in window)) {
-                toast.error("Text-to-speech is not supported in your browser");
+            if (!('speechSynthesis' in window)) {
+                toast.error('Text-to-speech is not supported in your browser');
                 return;
             }
 
@@ -26,18 +26,18 @@ export default function useTTS() {
 
             speechSynthesis.speak(utterance);
         } catch (error) {
-            console.error("Error playing audio:", error);
-            toast.error("Failed to play audio");
+            console.error('Error playing audio:', error);
+            toast.error('Failed to play audio');
         }
     };
 
     const toggleAutoPlayTTS = () => {
         if (autoPlayTTS) {
-            toast.info("Disabled auto play TTS", {
+            toast.info('Disabled auto play TTS', {
                 duration: 1500,
             });
         } else {
-            toast.info("Enabled auto play TTS", {
+            toast.info('Enabled auto play TTS', {
                 duration: 1500,
             });
         }
@@ -56,34 +56,34 @@ export default function useTTS() {
     useEffect(() => {
         const initializeVoice = () => {
             try {
-                if (!("speechSynthesis" in window)) {
-                    toast.error("Text-to-speech is not supported in your browser");
+                if (!('speechSynthesis' in window)) {
+                    toast.error('Text-to-speech is not supported in your browser');
                     return;
                 }
 
                 const voices = speechSynthesis.getVoices();
 
                 let selectedVoice = voices.find((voice) =>
-                    voice.name.startsWith("Google UK English Male")
+                    voice.name.startsWith('Google UK English Male')
                 );
 
                 if (!selectedVoice) {
                     selectedVoice = voices.find(
                         (voice) =>
-                            voice.lang.startsWith("en") && voice.name.toLowerCase().includes("male")
+                            voice.lang.startsWith('en') && voice.name.toLowerCase().includes('male')
                     );
                 }
 
                 if (!selectedVoice) {
-                    selectedVoice = voices.find((voice) => voice.lang.startsWith("en"));
+                    selectedVoice = voices.find((voice) => voice.lang.startsWith('en'));
                 }
 
                 if (selectedVoice) {
                     setVoice(selectedVoice);
                 }
             } catch (error) {
-                console.error("Error initializing voice:", error);
-                toast.error("Failed to initialize voice");
+                console.error('Error initializing voice:', error);
+                toast.error('Failed to initialize voice');
             }
         };
 
@@ -93,10 +93,10 @@ export default function useTTS() {
             initializeVoice();
         };
 
-        speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged);
+        speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
 
         return () => {
-            speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
+            speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
         };
     }, []);
 

@@ -40,15 +40,13 @@ const DisplayMessages = (
                             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} text-xs xl:text-base`}>
                                 {/* display model response */}
                                 {message.role === 'model' && (
-                                    <div className="flex items-start gap-1">
-                                        <div className="w-4 h-4 xl:w-6 xl:h-6 
-                                                            p-3 xl:p-4
-                                                            rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0">
+                                    <div className="flex items-start gap-3 p-3">
+                                        <div className="w-4 h-4 xl:w-6 xl:h-6 p-3 xl:p-4 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0">
                                             AI
                                         </div>
                                         <div className="flex flex-col gap-2">
-                                            <div className="bg-muted rounded-2xl rounded-tl-md p-3 shadow-sm">
-                                                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                                            <div className="bg-accent/10 p-3 rounded-2xl rounded-tl-md shadow-sm">
+                                                <p className="text-foreground leading-relaxed">
                                                     {message.message}
                                                     <Badge className="ml-2 opacity-70 hover:opacity-100 transition-opacity">
                                                         <button
@@ -56,7 +54,7 @@ const DisplayMessages = (
                                                             className="inline-flex items-center gap-1 text-xs text-white"
                                                         >
                                                             <PlayIcon className="h-3 w-3" />
-                                                            Play audio
+                                                            <span className="text-xs hidden md:block">Play Audio</span>
                                                         </button>
                                                     </Badge>
                                                 </p>
@@ -66,7 +64,7 @@ const DisplayMessages = (
                                 )}
                                 {/* display user message */}
                                 {message.role === 'user' && (
-                                    <div className="flex items-start gap-1 max-w-[80%]">
+                                    <div className="flex items-start gap-3 max-w-[80%]">
                                         <div className="flex flex-col gap-2">
                                             <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md p-3 shadow-sm">
                                                 <p className="whitespace-pre-wrap leading-relaxed">
@@ -74,9 +72,7 @@ const DisplayMessages = (
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="w-4 h-4 xl:w-6 xl:h-6 
-                                                            p-3 xl:p-4
-                                                            rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0">
+                                        <div className="w-4 h-4 xl:w-6 xl:h-6 p-3 xl:p-4 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0">
                                             {interview?.username?.[0]?.toUpperCase() || 'U'}
                                         </div>
                                     </div>

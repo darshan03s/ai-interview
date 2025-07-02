@@ -113,7 +113,7 @@ const Interview = () => {
                 </div>
 
                 {/* Input Section */}
-                <div className="xl:h-[-webkit-fill-available] flex flex-col gap-2 space-y-2">
+                <div className="xl:h-[-webkit-fill-available] flex flex-col gap-2 space-y-2 flex-1 w-full">
                     <div className="interview-user-info h-4 flex space-x-2">
                         <Badge variant="secondary" className="p-2.5 text-xs ">
                             {interview?.interview_type ? `${interview.interview_type.charAt(0).toUpperCase() + interview.interview_type.slice(1)} Interview` : "Interview"}
