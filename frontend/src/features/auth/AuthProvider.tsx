@@ -3,6 +3,7 @@ import supabase from "@/lib/supabase"
 import type { Session } from "@supabase/supabase-js"
 import { AuthContext } from "@/features/auth/AuthContext"
 import { devLog } from "@/utils/devUtils";
+import { toast } from "sonner";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
@@ -26,12 +27,27 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
 
     async function signInWithGoogle() {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-        });
+        if (window.location.hostname === "localhost") {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: 'http://localhost:5173'
+                }
+            });
 
-        if (error) {
-            console.error('Error signing in with Google:', error.message);
+            if (error) {
+                console.error('Error signing in with Google:', error.message);
+                toast.error("Error signing in with Google")
+            }
+        } else {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+
+            if (error) {
+                console.error('Error signing in with Google:', error.message);
+                toast.error("Error signing in with Google")
+            }
         }
     }
 
@@ -39,6 +55,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         const { error } = await supabase.auth.signOut();
         if (error) {
             console.error('Error signing out:', error.message);
+            toast.error("Error signing out")
         }
     }
 
