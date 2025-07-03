@@ -2,8 +2,14 @@ import type { UserInputAreaProps } from "./UserInputArea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CirclePlay, Loader2, Mic, SendIcon, SpellCheck, X } from "lucide-react"
 import { isDevMode } from "@/utils/devUtils"
+import useSpellCheck from "../hooks/useSpellCheck";
+import { useEffect } from "react";
 
-type UserInputActionsProps = Partial<UserInputAreaProps> & {
+type UserInputActionsProps = Pick<UserInputAreaProps,
+    'isStreamingResponse' | 'interview' | 'isRecording' | 'isInterviewCompleted' |
+    'toggleAutoPlayTTS' | 'autoPlayTTS' |
+    'handleVoiceInput' | 'userMessage' | 'sendMessage'
+> & {
     handleEndInterview: () => void;
     isEndingInterview: boolean;
 }
@@ -17,12 +23,39 @@ const UserInputActions = ({
     isInterviewCompleted,
     toggleAutoPlayTTS,
     autoPlayTTS,
-    aiSpellCheck,
-    isSpellChecking,
     handleVoiceInput,
     userMessage,
-    sendMessage
+    sendMessage,
 }: UserInputActionsProps) => {
+
+    const {
+        aiSpellCheck,
+        isSpellChecking
+    } = useSpellCheck();
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            if (e.shiftKey && e.key.toLowerCase() === "r") {
+                e.preventDefault();
+                handleVoiceInput();
+            }
+
+            if (e.shiftKey && e.key.toLowerCase() === "s") {
+                e.preventDefault();
+                aiSpellCheck();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [handleVoiceInput, aiSpellCheck]);
 
     const tooltipSide = window.innerWidth > 1200 ? 'left' : 'top';
 

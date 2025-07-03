@@ -7,7 +7,6 @@ import InterviewLoading from "./components/InterviewLoading";
 import DisplayMessages from "./components/DisplayMessages";
 import UserInputArea from "./components/UserInputArea";
 import useTTS from "./hooks/useTTS";
-import useSpellCheck from "./hooks/useSpellCheck";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { devLog, isDevMode } from "@/utils/devUtils";
@@ -44,19 +43,23 @@ const Interview = () => {
     const {
         playAudioMessage,
         autoPlayTTS,
-        toggleAutoPlayTTS
+        toggleAutoPlayTTS,
+        isAiResponsePlaying
     } = useTTS();
-
-    const {
-        aiSpellCheck,
-        isSpellChecking
-    } = useSpellCheck();
 
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [messagesHistory]);
+
+    useEffect(() => {
+        if (!isInterviewStarted) return;
+        if (interview?.is_completed || isInterviewCompleted) return;
+        if (!isAiResponsePlaying) {
+            handleVoiceInput();
+        }
+    }, [isInterviewStarted, interview?.is_completed, isInterviewCompleted]);
 
     useEffect(() => {
         if (!authLoading && interviewId) {
@@ -94,7 +97,12 @@ const Interview = () => {
         <div className="flex flex-col justify-center gap-12 py-4">
             <div className="interview-container flex flex-col xl:flex-row items-center justify-center gap-4 mx-4 md:mx-8 flex-1">
                 <div className="interview-container-conversation w-full xl:w-2/3 space-y-2 flex flex-col gap-2 max-h-[calc(100vh-18rem)] h-[calc(100vh-18rem)] xl:max-h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
-                    <ViewResume resumeUrl={interview?.resume_url} />
+                    <div className="flex items-center justify-between gap-2 h-4">
+                        <ViewResume resumeUrl={interview?.resume_url} />
+                        <Badge variant="secondary" className={`text-xs ${isRecording ? "bg-red-500" : ""}`}>
+                            {isRecording ? "Recording..." : "Not recording"}
+                        </Badge>
+                    </div>
                     {/* Messages Container */}
                     <div ref={messagesContainerRef} className="chat-section bg-card rounded-2xl ring-1 ring-border shadow-sm overflow-y-auto hide-scrollbar p-4 space-y-4 h-full">
                         {!isInterviewStarted ? (
@@ -107,6 +115,7 @@ const Interview = () => {
                                 currentStreamingMessage={currentStreamingMessage}
                                 interview={interview}
                                 playAudioMessage={playAudioMessage}
+                                isAiResponsePlaying={isAiResponsePlaying}
                             />
                         )}
                     </div>
@@ -137,8 +146,6 @@ const Interview = () => {
                             sendMessage={sendMessage}
                             autoPlayTTS={autoPlayTTS}
                             toggleAutoPlayTTS={toggleAutoPlayTTS}
-                            aiSpellCheck={aiSpellCheck}
-                            isSpellChecking={isSpellChecking}
                             setIsInterviewCompleted={setIsInterviewCompleted}
                             isInterviewCompleted={isInterviewCompleted}
                         />

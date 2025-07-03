@@ -1,7 +1,6 @@
 
 import useInterview from "../hooks/useInterview"
 import useTTS from "../hooks/useTTS"
-import useSpellCheck from "../hooks/useSpellCheck"
 import { memo, useState } from "react";
 import { toast } from "sonner"
 import { useAuth } from "@/features/auth";
@@ -10,7 +9,7 @@ import { endInterview } from "@/api";
 
 export type UserInputAreaProps = Pick<ReturnType<typeof useInterview>,
     'userMessage' | 'setUserMessage' | 'handleSendMessage' | 'isStreamingResponse' | 'handleVoiceInput' | 'isRecording' | 'sendMessage' | 'interview' | 'isInterviewCompleted' | 'setIsInterviewCompleted'
-> & Pick<ReturnType<typeof useTTS>, 'autoPlayTTS' | 'toggleAutoPlayTTS'> & Pick<ReturnType<typeof useSpellCheck>, 'aiSpellCheck' | 'isSpellChecking'>;
+> & Pick<ReturnType<typeof useTTS>, 'autoPlayTTS' | 'toggleAutoPlayTTS'>;
 
 const UserInputArea = (
     {
@@ -24,10 +23,8 @@ const UserInputArea = (
         sendMessage,
         autoPlayTTS,
         toggleAutoPlayTTS,
-        aiSpellCheck,
-        isSpellChecking,
         isInterviewCompleted,
-        setIsInterviewCompleted
+        setIsInterviewCompleted,
     }: UserInputAreaProps
 ) => {
     const { session } = useAuth();
@@ -75,8 +72,6 @@ const UserInputArea = (
                             isInterviewCompleted={isInterviewCompleted}
                             toggleAutoPlayTTS={toggleAutoPlayTTS}
                             autoPlayTTS={autoPlayTTS}
-                            aiSpellCheck={aiSpellCheck}
-                            isSpellChecking={isSpellChecking}
                             handleVoiceInput={handleVoiceInput}
                             userMessage={userMessage}
                             sendMessage={sendMessage}
@@ -106,8 +101,6 @@ const UserInputArea = (
                         isInterviewCompleted={isInterviewCompleted}
                         toggleAutoPlayTTS={toggleAutoPlayTTS}
                         autoPlayTTS={autoPlayTTS}
-                        aiSpellCheck={aiSpellCheck}
-                        isSpellChecking={isSpellChecking}
                         handleVoiceInput={handleVoiceInput}
                         userMessage={userMessage}
                         sendMessage={sendMessage}

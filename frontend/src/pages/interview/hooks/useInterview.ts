@@ -276,7 +276,7 @@ export default function useInterview() {
             recognition.lang = 'en-US';
 
             toast.info('Listening... Press Shift+R or click mic to stop', {
-                duration: 1000,
+                duration: 3000,
             });
 
             recognition.onstart = () => {
@@ -301,7 +301,6 @@ export default function useInterview() {
             };
 
             recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
                 setIsRecording(false);
                 recognitionRef.current = null;
 
@@ -312,8 +311,6 @@ export default function useInterview() {
                     case 'not-allowed':
                         toast.error('Microphone permission denied.');
                         break;
-                    default:
-                        toast.error(`Speech recognition error: ${event.error}`);
                 }
             };
 

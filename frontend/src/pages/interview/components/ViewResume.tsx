@@ -8,7 +8,7 @@ interface ViewResumeProps {
 const ViewResume = ({ resumeUrl }: ViewResumeProps) => {
     if (!resumeUrl) return null;
     return (
-        <div className="resume-url flex items-center justify-center gap-2 h-4">
+        <div className="resume-url">
             <a
                 href={resumeUrl || ""}
                 target="_blank"

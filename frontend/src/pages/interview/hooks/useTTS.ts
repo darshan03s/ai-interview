@@ -7,6 +7,7 @@ export default function useTTS() {
     const [autoPlayTTS, setAutoPlayTTS] = useState<boolean>(true);
     const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const [isAiResponsePlaying, setIsAiResponsePlaying] = useState<boolean>(false);
 
     const playAudioMessage = async (message: string): Promise<void> => {
         try {
@@ -24,7 +25,15 @@ export default function useTTS() {
 
             utterance.voice = voice;
 
+            utterance.onstart = () => {
+                setIsAiResponsePlaying(true);
+            };
+
             speechSynthesis.speak(utterance);
+
+            utterance.onend = () => {
+                setIsAiResponsePlaying(false);
+            };
         } catch (error) {
             console.error('Error playing audio:', error);
             toast.error('Failed to play audio');
@@ -107,5 +116,6 @@ export default function useTTS() {
         voice,
         setVoice,
         recognitionRef,
+        isAiResponsePlaying,
     };
 }
