@@ -1,30 +1,33 @@
 import { continueInterview, getMessagesHistory, getReport, startInterview } from '@/api';
 import { useAuth } from '@/features/auth';
-import type { InterviewType, MessageType, ReportType } from '@/types';
-import { useRef, useState, useCallback } from 'react';
+import type { MessageType } from '@/types';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
-import useTTS from './useTTS';
+import useTextToSpeech from './useTextToSpeech';
 import { useParams } from 'react-router-dom';
 import { devLog } from '@/utils/devUtils';
+import useChatStore from '../stores/chatStore';
+import useInterviewStore from '../stores/interviewStore';
+import useSpeechStore from '../stores/speechStore';
 
 export default function useInterview() {
     const { interviewId } = useParams();
     const { session, authLoading } = useAuth();
-    const [isInterviewStarting, setIsInterviewStarting] = useState<boolean>(false);
-    const [isInterviewStarted, setIsInterviewStarted] = useState<boolean>(false);
-    const [interview, setInterview] = useState<InterviewType | null>(null);
-    const [isStreamingResponse, setIsStreamingResponse] = useState<boolean>(false);
-    const [isFetchingMessages, setIsFetchingMessages] = useState<boolean>(false);
-    const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
-    const [isRecording, setIsRecording] = useState<boolean>(false);
-    const [messagesHistory, setMessagesHistory] = useState<MessageType[]>([]);
-    const [userMessage, setUserMessage] = useState<string>('');
-    const finalTranscriptRef = useRef<string>('');
-    const [report, setReport] = useState<ReportType | undefined>();
-    const [fetchingReport, setFetchingReport] = useState(false);
-    const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
+    const { playAudioMessage } = useTextToSpeech();
+    const { autoPlayTextToSpeech } = useSpeechStore();
 
-    const { playAudioMessage, autoPlayTTS, recognitionRef } = useTTS();
+    const { setIsResponseStreaming, setCurrentStreamingMessage, addMessage, setMessagesHistory } =
+        useChatStore();
+
+    const {
+        setIsInterviewStarting,
+        setInterview,
+        setIsInterviewStarted,
+        setIsInterviewCompleted,
+        setIsFetchingMessages,
+        setReport,
+        setIsFetchingReport,
+    } = useInterviewStore();
 
     const startInterviewWithAI = useCallback(async () => {
         const token = session?.access_token;
@@ -79,30 +82,11 @@ export default function useInterview() {
         }
     }, [session?.access_token, interviewId]);
 
-    const sendMessage = useCallback(async () => {
-        if (!userMessage.trim()) return;
-        if (interview?.is_completed) {
-            toast.info('Interview is already completed');
-            return;
-        }
-        const token = session?.access_token;
-        if (!token) {
-            toast.error('User not signed in');
-            console.error('User not signed in');
-            return;
-        }
-
-        // Add user message to history immediately
-        const newUserMessage: MessageType = { role: 'user', message: userMessage };
-        setMessagesHistory((prev) => [...prev, newUserMessage]);
-        const currentMessage = userMessage;
-        setUserMessage('');
-        setCurrentStreamingMessage('');
-
+    const sendMessage = async (message: string, token: string, interviewId: string) => {
         try {
             devLog('Sending message to AI');
-            setIsStreamingResponse(true);
-            const response = await continueInterview(token, interviewId!, currentMessage);
+            setIsResponseStreaming(true);
+            const response = await continueInterview(token, interviewId, message);
 
             if (!response.ok) {
                 if (response.status >= 400 && response.status < 500) {
@@ -140,12 +124,11 @@ export default function useInterview() {
                     setCurrentStreamingMessage(chunks);
                 }
 
-                // Add the complete AI response to messages history
                 const newModelMessage: MessageType = { role: 'model', message: chunks };
-                if (autoPlayTTS) {
+                if (autoPlayTextToSpeech) {
                     playAudioMessage(chunks);
                 }
-                setMessagesHistory((prev) => [...prev, newModelMessage]);
+                addMessage(newModelMessage);
                 if (chunks.includes('Thank you for your time. We will get back to you soon.')) {
                     toast.info('Interview completed');
                     setIsInterviewCompleted(true);
@@ -165,24 +148,17 @@ export default function useInterview() {
                     toast.info(resJson.message);
                 }
             } finally {
-                setIsStreamingResponse(false);
+                setIsResponseStreaming(false);
                 setCurrentStreamingMessage('');
             }
         } catch (error) {
             toast.error('Unknown error from server');
             console.error('Unknown error from server:', error);
         } finally {
-            setIsStreamingResponse(false);
+            setIsResponseStreaming(false);
             setCurrentStreamingMessage('');
         }
-    }, [
-        userMessage,
-        interview?.is_completed,
-        session?.access_token,
-        interviewId,
-        autoPlayTTS,
-        playAudioMessage,
-    ]);
+    };
 
     const getMessages = useCallback(async () => {
         const token = session?.access_token;
@@ -234,114 +210,13 @@ export default function useInterview() {
         }
     }, [session?.access_token, interviewId]);
 
-    const handleSendMessage = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    };
-
-    const handleVoiceInput = async () => {
-        if (interview?.is_completed) {
-            toast.info('Interview is already completed');
-            return;
-        }
-        try {
-            if (isRecording && recognitionRef.current) {
-                recognitionRef.current.stop();
-                return;
-            }
-
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-            if (!SpeechRecognition) {
-                toast.error('Speech recognition is not supported in your browser');
-                return;
-            }
-
-            try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-            } catch (error) {
-                toast.error('Microphone permission denied. Please allow microphone access.');
-                console.error('Microphone permission denied:', error);
-                return;
-            }
-
-            const recognition = new SpeechRecognition();
-            recognitionRef.current = recognition;
-            finalTranscriptRef.current = '';
-
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
-            toast.info('Listening... Press Shift+R or click mic to stop', {
-                duration: 3000,
-            });
-
-            recognition.onstart = () => {
-                setIsRecording(true);
-            };
-
-            recognition.onresult = (event) => {
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-
-                    if (event.results[i].isFinal) {
-                        finalTranscriptRef.current += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-
-                // Update the textarea with current transcript
-                setUserMessage(finalTranscriptRef.current + interimTranscript);
-            };
-
-            recognition.onerror = (event) => {
-                setIsRecording(false);
-                recognitionRef.current = null;
-
-                switch (event.error) {
-                    case 'audio-capture':
-                        toast.error('Microphone not accessible. Please check permissions.');
-                        break;
-                    case 'not-allowed':
-                        toast.error('Microphone permission denied.');
-                        break;
-                }
-            };
-
-            recognition.onend = () => {
-                setIsRecording(false);
-                recognitionRef.current = null;
-
-                const finalText = finalTranscriptRef.current.trim();
-                if (finalText) {
-                    setUserMessage(finalText);
-                }
-
-                finalTranscriptRef.current = '';
-            };
-
-            recognition.start();
-        } catch (error) {
-            console.error('Error with voice input:', error);
-            toast.error('Failed to start voice input');
-            setIsRecording(false);
-            recognitionRef.current = null;
-        }
-    };
-
     const fetchReport = useCallback(async () => {
         if (authLoading) return;
         if (!session?.access_token) return;
 
         try {
             devLog('Fetching report');
-            setFetchingReport(true);
+            setIsFetchingReport(true);
             const response = await getReport(session.access_token, interviewId!);
             if (!response.ok) {
                 if (response.status >= 400 && response.status < 500) {
@@ -375,33 +250,14 @@ export default function useInterview() {
             toast.error('Failed to fetch report');
             console.error(error);
         } finally {
-            setFetchingReport(false);
+            setIsFetchingReport(false);
         }
     }, [authLoading, session?.access_token, interviewId]);
 
     return {
         startInterviewWithAI,
-        isInterviewStarting,
-        isInterviewStarted,
-        interview,
         sendMessage,
-        isStreamingResponse,
-        currentStreamingMessage,
-        messagesHistory,
-        userMessage,
-        setUserMessage,
-        setMessagesHistory,
-        isFetchingMessages,
-        setIsFetchingMessages,
         getMessages,
-        handleSendMessage,
-        handleVoiceInput,
-        isRecording,
         fetchReport,
-        fetchingReport,
-        report,
-        setInterview,
-        isInterviewCompleted,
-        setIsInterviewCompleted,
     };
 }

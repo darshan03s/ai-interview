@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import MarkdownRenderer from "./MarkdownRenderer";
 // import { FileText } from "lucide-react";
-import type useInterview from "../hooks/useInterview";
+import useInterview from "../hooks/useInterview";
 import { memo, useEffect, useRef } from "react";
+import useInterviewStore from "../stores/interviewStore";
 
-type ReportProps = Pick<ReturnType<typeof useInterview>, 'report' | 'fetchingReport' | 'fetchReport'>;
-
-const Report = ({ report, fetchingReport, fetchReport }: ReportProps) => {
+const Report = () => {
     const reportTitleRef = useRef<HTMLHeadingElement>(null);
+    const { fetchReport } = useInterview();
+    const { report, isFetchingReport } = useInterviewStore();
 
     useEffect(() => {
         if (reportTitleRef.current) {
@@ -21,8 +22,8 @@ const Report = ({ report, fetchingReport, fetchReport }: ReportProps) => {
             {report?.is_created ?
                 null
                 :
-                <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!" onClick={fetchReport} disabled={fetchingReport || report?.is_created}>
-                    {fetchingReport ? "Fetching report..." : "Get report"}
+                <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!" onClick={fetchReport} disabled={isFetchingReport || report?.is_created}>
+                    {isFetchingReport ? "Fetching report..." : "Get report"}
                 </Button>
             }
             {/* {report?.is_created ?

@@ -6,60 +6,42 @@ import PageLoading from "./components/PageLoading";
 import InterviewLoading from "./components/InterviewLoading";
 import DisplayMessages from "./components/DisplayMessages";
 import UserInputArea from "./components/UserInputArea";
-import useTTS from "./hooks/useTTS";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { devLog, isDevMode } from "@/utils/devUtils";
 import { Badge } from "@/components/ui/badge";
+import useInterviewStore from "./stores/interviewStore";
+import { toast } from "sonner";
+import useSpeechStore from "./stores/speechStore";
+import useChatStore from "./stores/chatStore";
 
 const Interview = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const { interviewId } = useParams();
     const { authLoading } = useAuth();
+    const { setInterviewId } = useInterviewStore();
+    const { speechRecognition, setSpeechRecognition, setVoice } = useSpeechStore();
+
+    useEffect(() => {
+        if (interviewId) {
+            setInterviewId(interviewId);
+        }
+    }, [interviewId, setInterviewId]);
 
     const {
-        interview,
-        isInterviewStarted,
-        isInterviewStarting,
-        messagesHistory,
-        isFetchingMessages,
-        isStreamingResponse,
-        currentStreamingMessage,
-        userMessage,
-        handleSendMessage,
-        handleVoiceInput,
-        isRecording,
-        sendMessage,
-        setUserMessage,
-        report,
-        fetchingReport,
         fetchReport,
         startInterviewWithAI,
         getMessages,
-        isInterviewCompleted,
-        setIsInterviewCompleted,
     } = useInterview();
 
-    const {
-        playAudioMessage,
-        autoPlayTTS,
-        toggleAutoPlayTTS,
-        isAiResponsePlaying
-    } = useTTS();
+    const { messagesHistory } = useChatStore();
+    const { isInterviewStarted, isInterviewCompleted, interview, report, isInterviewStarting, isRecording } = useInterviewStore();
 
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [messagesHistory]);
-
-    useEffect(() => {
-        if (!isInterviewStarted) return;
-        if (interview?.is_completed || isInterviewCompleted) return;
-        if (!isAiResponsePlaying) {
-            handleVoiceInput();
-        }
-    }, [isInterviewStarted, interview?.is_completed, isInterviewCompleted]);
 
     useEffect(() => {
         if (!authLoading && interviewId) {
@@ -85,6 +67,63 @@ const Interview = () => {
         }
     }, [interview?.is_completed, report?.is_created, fetchReport]);
 
+    useEffect(() => {
+        return () => {
+            if (speechRecognition) {
+                speechRecognition.stop();
+                setSpeechRecognition(null);
+            }
+        };
+    }, [interviewId]);
+
+    useEffect(() => {
+        const initializeVoice = () => {
+            try {
+                if (!('speechSynthesis' in window)) {
+                    toast.error('Text-to-speech is not supported in your browser');
+                    return;
+                }
+
+                const voices = speechSynthesis.getVoices();
+
+                let selectedVoice = voices.find((voice) =>
+                    voice.name.startsWith('Google UK English Male')
+                );
+
+                if (!selectedVoice) {
+                    selectedVoice = voices.find(
+                        (voice) =>
+                            voice.lang.startsWith('en') && voice.name.toLowerCase().includes('male')
+                    );
+                }
+
+                if (!selectedVoice) {
+                    selectedVoice = voices.find((voice) => voice.lang.startsWith('en'));
+                }
+
+                if (selectedVoice) {
+                    setVoice(selectedVoice);
+                }
+            } catch (error) {
+                console.error('Error initializing voice:', error);
+                toast.error('Failed to initialize voice');
+            }
+        };
+
+        initializeVoice();
+
+        const handleVoicesChanged = () => {
+            initializeVoice();
+        };
+
+        speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+
+        return () => {
+            speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        };
+    }, []);
+
+
     if (isInterviewStarting || !isInterviewStarted) {
         return (
             <PageLoading />
@@ -108,15 +147,7 @@ const Interview = () => {
                         {!isInterviewStarted ? (
                             <InterviewLoading />
                         ) : (
-                            <DisplayMessages
-                                isFetchingMessages={isFetchingMessages}
-                                messagesHistory={messagesHistory}
-                                isStreamingResponse={isStreamingResponse}
-                                currentStreamingMessage={currentStreamingMessage}
-                                interview={interview}
-                                playAudioMessage={playAudioMessage}
-                                isAiResponsePlaying={isAiResponsePlaying}
-                            />
+                            <DisplayMessages />
                         )}
                     </div>
                 </div>
@@ -135,30 +166,13 @@ const Interview = () => {
                         </Badge>
                     </div>
                     <div className="flex-1">
-                        <UserInputArea
-                            userMessage={userMessage}
-                            setUserMessage={setUserMessage}
-                            handleSendMessage={handleSendMessage}
-                            isStreamingResponse={isStreamingResponse}
-                            handleVoiceInput={handleVoiceInput}
-                            interview={interview}
-                            isRecording={isRecording}
-                            sendMessage={sendMessage}
-                            autoPlayTTS={autoPlayTTS}
-                            toggleAutoPlayTTS={toggleAutoPlayTTS}
-                            setIsInterviewCompleted={setIsInterviewCompleted}
-                            isInterviewCompleted={isInterviewCompleted}
-                        />
+                        <UserInputArea />
                     </div>
                 </div>
             </div>
 
             {interview?.is_completed || isInterviewCompleted ? (
-                <Report
-                    report={report}
-                    fetchingReport={fetchingReport}
-                    fetchReport={fetchReport}
-                />
+                <Report />
             ) : null}
         </div>
     );

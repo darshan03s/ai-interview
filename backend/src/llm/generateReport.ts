@@ -9,7 +9,7 @@ export async function generateReport(
 ): Promise<string | null> {
     try {
         if (!gemini) {
-            return 'All API keys are currently rate limited. Please try again in a few minutes.';
+            return 'API key is currently rate limited.';
         }
 
         const response = await gemini.models.generateContent({
@@ -39,6 +39,6 @@ export async function generateReport(
             return 'API quota exceeded. Please check your plan and billing details or try again later.';
         }
 
-        return 'An unknown error occurred while generating the report with LLM. Please try again.';
+        return 'An unknown error occurred while generating the report with LLM.';
     }
 }

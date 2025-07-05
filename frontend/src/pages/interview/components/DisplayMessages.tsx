@@ -1,25 +1,17 @@
 import { PlayIcon } from "lucide-react";
-import useInterview from "../hooks/useInterview";
-import useTTS from "../hooks/useTTS";
+import useTextToSpeech from "../hooks/useTextToSpeech";
 import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
+import useInterviewStore from "../stores/interviewStore";
+import useChatStore from "../stores/chatStore";
+import useSpeechStore from "../stores/speechStore";
 
-type DisplayMessagesProps = Pick<ReturnType<typeof useInterview>,
-    'isFetchingMessages' | 'messagesHistory' | 'isStreamingResponse' | 'currentStreamingMessage' | 'interview'
-> & Pick<ReturnType<typeof useTTS>, 'playAudioMessage' | 'isAiResponsePlaying'>;
+const DisplayMessages = () => {
 
-const DisplayMessages = (
-    {
-        isFetchingMessages,
-        messagesHistory,
-        isStreamingResponse,
-        currentStreamingMessage,
-        interview,
-        playAudioMessage,
-        isAiResponsePlaying
-    }: DisplayMessagesProps) => {
-
-    console.log("isAiResponsePlaying", isAiResponsePlaying);
+    const { isFetchingMessages, interview } = useInterviewStore();
+    const { isResponseStreaming, currentStreamingMessage, messagesHistory } = useChatStore();
+    const { playAudioMessage } = useTextToSpeech();
+    const { currentlyPlayingMessage } = useSpeechStore();
 
     return (
         <>
@@ -46,7 +38,7 @@ const DisplayMessages = (
                                     <div className="flex items-start gap-3 p-3">
                                         <div className="w-4 h-4 xl:w-6 xl:h-6 p-3 xl:p-4 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs xl:text-sm shrink-0 relative">
                                             AI
-                                            {isAiResponsePlaying && (
+                                            {currentlyPlayingMessage === message.message && (
                                                 <div className="absolute -inset-2 bg-primary/50 rounded-full animate-ping animation-duration-1000"></div>
                                             )}
                                         </div>
@@ -89,7 +81,7 @@ const DisplayMessages = (
             }
 
             {/* Streaming Response */}
-            {isStreamingResponse && (
+            {isResponseStreaming && (
                 <div className="flex justify-start">
                     <div className="flex items-start gap-3 max-w-[80%]">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">

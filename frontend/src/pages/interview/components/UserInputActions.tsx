@@ -1,37 +1,41 @@
-import type { UserInputAreaProps } from "./UserInputArea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CirclePlay, Loader2, Mic, SendIcon, SpellCheck, X } from "lucide-react"
 import { isDevMode } from "@/utils/devUtils"
 import useSpellCheck from "../hooks/useSpellCheck";
 import { useEffect } from "react";
+import useInterviewStore from "../stores/interviewStore";
+import useChatStore from "../stores/chatStore";
+import useSpeechStore from "../stores/speechStore";
+import useTextToSpeech from "../hooks/useTextToSpeech";
 
-type UserInputActionsProps = Pick<UserInputAreaProps,
-    'isStreamingResponse' | 'interview' | 'isRecording' | 'isInterviewCompleted' |
-    'toggleAutoPlayTTS' | 'autoPlayTTS' |
-    'handleVoiceInput' | 'userMessage' | 'sendMessage'
-> & {
+type UserInputActionsProps = {
     handleEndInterview: () => void;
-    isEndingInterview: boolean;
+    handleSendMessage: (e: React.KeyboardEvent | React.MouseEvent) => void;
+    handleVoiceInput: () => void;
+    userMessage: string;
+    setUserMessage: (message: string) => void;
 }
 
 const UserInputActions = ({
-    isEndingInterview,
     handleEndInterview,
-    isStreamingResponse,
-    interview,
-    isRecording,
-    isInterviewCompleted,
-    toggleAutoPlayTTS,
-    autoPlayTTS,
+    handleSendMessage,
     handleVoiceInput,
     userMessage,
-    sendMessage,
+    setUserMessage
 }: UserInputActionsProps) => {
 
-    const {
-        aiSpellCheck,
-        isSpellChecking
-    } = useSpellCheck();
+    const { interview, isInterviewCompleted, isRecording, isInterviewEnding } = useInterviewStore();
+    const { isResponseStreaming } = useChatStore();
+    const { autoPlayTextToSpeech } = useSpeechStore();
+    const { toggleAutoPlayTextToSpeech } = useTextToSpeech();
+    const { aiSpellCheck, isSpellChecking } = useSpellCheck();
+
+    const handleSpellCheck = async () => {
+        const spellCheckedMessage = await aiSpellCheck(userMessage);
+        if (spellCheckedMessage) {
+            setUserMessage(spellCheckedMessage);
+        }
+    }
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,7 +50,7 @@ const UserInputActions = ({
 
             if (e.shiftKey && e.key.toLowerCase() === "s") {
                 e.preventDefault();
-                aiSpellCheck();
+                handleSpellCheck();
             }
         };
 
@@ -67,10 +71,10 @@ const UserInputActions = ({
                         <TooltipTrigger asChild>
                             <button
                                 onClick={handleEndInterview}
-                                disabled={isStreamingResponse || interview?.is_completed || isRecording || isInterviewCompleted || isEndingInterview}
+                                disabled={isResponseStreaming || interview?.is_completed || isRecording || isInterviewCompleted || isInterviewEnding}
                                 className={`bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                             >
-                                {isEndingInterview ? (
+                                {isInterviewEnding ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                     <X className="h-4 w-4" />
@@ -78,7 +82,7 @@ const UserInputActions = ({
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side={tooltipSide}>
-                            {isEndingInterview ? 'Ending interview...' : 'End Interview'}
+                            {isInterviewEnding ? 'Ending interview...' : 'End Interview'}
                         </TooltipContent>
                     </Tooltip>
                     : null
@@ -87,7 +91,7 @@ const UserInputActions = ({
                 <TooltipTrigger asChild>
                     <button
                         onClick={handleVoiceInput}
-                        disabled={isStreamingResponse || interview?.is_completed || isInterviewCompleted}
+                        disabled={isResponseStreaming || interview?.is_completed || isInterviewCompleted}
                         className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
                         <Mic className="h-4 w-4" />
@@ -100,8 +104,8 @@ const UserInputActions = ({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={aiSpellCheck}
-                        disabled={!userMessage?.trim() || isSpellChecking || interview?.is_completed || isInterviewCompleted}
+                        onClick={handleSpellCheck}
+                        disabled={userMessage!.trim().length === 0 || isSpellChecking || interview?.is_completed || isInterviewCompleted}
                         className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
                         {isSpellChecking ? (
@@ -118,26 +122,26 @@ const UserInputActions = ({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={toggleAutoPlayTTS}
+                        onClick={() => toggleAutoPlayTextToSpeech()}
                         disabled={interview?.is_completed || isInterviewCompleted}
-                        className={`${autoPlayTTS ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
+                        className={`${autoPlayTextToSpeech ? 'bg-green-500' : 'bg-red-500'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
                         <CirclePlay className="h-4 w-4" />
                     </button>
                 </TooltipTrigger>
                 <TooltipContent side={tooltipSide}>
-                    {autoPlayTTS ? 'Disable Text-to-Speech' : 'Enable Text-to-Speech'}
+                    {autoPlayTextToSpeech ? 'Disable Text-to-Speech' : 'Enable Text-to-Speech'}
                 </TooltipContent>
             </Tooltip>
 
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
-                        onClick={sendMessage}
-                        disabled={!userMessage?.trim() || isStreamingResponse || interview?.is_completed || isInterviewCompleted}
+                        onClick={handleSendMessage}
+                        disabled={!userMessage?.trim() || isResponseStreaming || interview?.is_completed || isInterviewCompleted}
                         className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
-                        {isStreamingResponse ? (
+                        {isResponseStreaming ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <SendIcon className="h-4 w-4" />
