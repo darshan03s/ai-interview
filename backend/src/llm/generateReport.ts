@@ -7,6 +7,7 @@ export async function generateReport(
     messages: AiMessageType[],
     createdAt: string
 ): Promise<string | null> {
+    console.log('Generating report..., messages:', messages.length);
     try {
         if (!gemini) {
             return 'API key is currently rate limited.';

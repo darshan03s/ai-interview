@@ -32,9 +32,9 @@ const Interview = () => {
     const isInterviewCompleted = useInterviewStore((state) => state.isInterviewCompleted);
     const setIsInterviewCompleted = useInterviewStore((state) => state.setIsInterviewCompleted);
     const interview = useInterviewStore((state) => state.interview);
-    const report = useInterviewStore((state) => state.report);
     const isInterviewStarting = useInterviewStore((state) => state.isInterviewStarting);
     const isRecording = useInterviewStore((state) => state.isRecording);
+    const isReportFetched = useInterviewStore((state) => state.isReportFetched);
 
     useEffect(() => {
         if (messagesContainerRef.current) {
@@ -79,10 +79,14 @@ const Interview = () => {
     }, [authLoading, isInterviewStarted, interviewId, setWs, interview?.is_completed]);
 
     useEffect(() => {
-        if (interview?.is_completed) {
+        if (!isInterviewStarted) return
+        if (!interview) return
+        if (isReportFetched) return
+        if (interview.is_completed) {
             fetchReport();
         }
-    }, [interview?.is_completed, report?.is_created, fetchReport]);
+
+    }, [interviewId, isInterviewStarted, interview, isReportFetched])
 
     useEffect(() => {
         return () => {

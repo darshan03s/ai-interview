@@ -16,8 +16,10 @@ interface InterviewStore {
     setIsFetchingMessages: (isFetchingMessages: boolean) => void;
     isFetchingReport: boolean;
     setIsFetchingReport: (isFetchingReport: boolean) => void;
+    isReportFetched: boolean;
+    setIsReportFetched: (isReportFetched: boolean) => void;
     report: ReportType | null;
-    setReport: (report: ReportType) => void;
+    setReport: (report: ReportType | null) => void;
     isInterviewEnding: boolean;
     setIsInterviewEnding: (isInterviewEnding: boolean) => void;
 }
@@ -37,8 +39,10 @@ const useInterviewStore = create<InterviewStore>((set) => ({
     setIsFetchingMessages: (isFetchingMessages: boolean) => set({ isFetchingMessages }),
     isFetchingReport: false,
     setIsFetchingReport: (isFetchingReport: boolean) => set({ isFetchingReport }),
+    isReportFetched: false,
+    setIsReportFetched: (isReportFetched: boolean) => set({ isReportFetched }),
     report: null,
-    setReport: (report: ReportType) => set({ report }),
+    setReport: (report: ReportType | null) => set({ report }),
     isInterviewEnding: false,
     setIsInterviewEnding: (isInterviewEnding: boolean) => set({ isInterviewEnding }),
 }));

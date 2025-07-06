@@ -28,6 +28,7 @@ export default function useInterview() {
     const setReport = useInterviewStore((state) => state.setReport);
     const interview = useInterviewStore((state) => state.interview);
     const isInterviewCompleted = useInterviewStore((state) => state.isInterviewCompleted);
+    const setIsReportFetched = useInterviewStore((state) => state.setIsReportFetched);
     const { interviewId } = useParams();
 
     const startInterviewWithAI = useCallback(async () => {
@@ -84,6 +85,8 @@ export default function useInterview() {
             setIsInterviewStarting(false);
             setIsInterviewStarted(true);
             setIsFetchingMessages(false);
+            setIsReportFetched(false);
+            setReport(null);
         }
     }, [session?.access_token, interviewId]);
 
@@ -97,7 +100,6 @@ export default function useInterview() {
             try {
                 devLog('Setting isResponseLoading to true');
                 devLog('Sending message to AI');
-
 
                 if (!ws) {
                     console.error('No WebSocket connection available');
@@ -153,72 +155,6 @@ export default function useInterview() {
                 ws.addEventListener('message', handleMessage);
 
                 ws.send(message);
-
-                // const response = await continueInterview(token, interviewId, message);
-
-                // if (!response.ok) {
-                //     if (response.status >= 400 && response.status < 500) {
-                //         toast.error('Unable to send message. Client error');
-                //         console.error(`Failed to send message: Client error (${response.status})`);
-                //         return;
-                //     } else if (response.status >= 500) {
-                //         toast.error('Unable to send message. Server error');
-                //         console.error(`Failed to send message: Server error (${response.status})`);
-                //         return;
-                //     }
-                //     toast.error('Unable to send message. Unknown error');
-                //     console.error(`Failed to send message: Unknown error (${response.status})`);
-                //     return;
-                // }
-
-                // try {
-                //     const reader = response.body?.getReader();
-                //     if (!reader) {
-                //         toast.error('ReadableStream not supported');
-                //         console.error('ReadableStream not supported');
-                //         return;
-                //     }
-
-                //     const decoder = new TextDecoder();
-                //     let chunks = '';
-
-                //     while (true) {
-                //         const { done, value } = await reader.read();
-
-                //         if (done) break;
-
-                //         const chunk = decoder.decode(value, { stream: true });
-                //         chunks += chunk;
-                //         setCurrentStreamingMessage(chunks);
-                //     }
-
-                //     const newModelMessage: MessageType = { role: 'model', message: chunks };
-                //     if (autoPlayTextToSpeech) {
-                //         playAudioMessage(chunks);
-                //     }
-                //     addMessage(newModelMessage);
-                //     if (chunks.includes('Thank you for your time. We will get back to you soon.')) {
-                //         toast.info('Interview completed');
-                //         setIsInterviewCompleted(true);
-                //     }
-                // } catch (error) {
-                //     const resJson = await response.json();
-                //     if (resJson.error) {
-                //         toast.error(resJson.error.message);
-                //         console.error(
-                //             'Failed to send message, Error from server:',
-                //             resJson.error,
-                //             error
-                //         );
-                //     }
-
-                //     if (resJson.message) {
-                //         toast.info(resJson.message);
-                //     }
-                // } finally {
-                //     setIsResponseLoading(false);
-                //     setCurrentStreamingMessage('');
-                // }
             } catch (error) {
                 toast.error('Unknown error from server');
                 console.error('Unknown error from server:', error);
@@ -326,8 +262,11 @@ export default function useInterview() {
                 return;
             }
             setReport(res.data);
+            setIsFetchingReport(false);
+            setIsReportFetched(true);
         } catch (error) {
             toast.error('Failed to fetch report');
+            setIsFetchingReport(false);
             console.error(error);
         } finally {
             setIsFetchingReport(false);

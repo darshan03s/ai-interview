@@ -23,7 +23,8 @@ const Report = () => {
             {report?.is_created ?
                 null
                 :
-                <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!" onClick={fetchReport} disabled={isFetchingReport || report?.is_created}>
+                <Button variant="outline" className="mx-auto disabled:opacity-50 disabled:cursor-not-allowed!"
+                    onClick={fetchReport} disabled={isFetchingReport || report?.is_created}>
                     {isFetchingReport ? "Fetching report..." : "Get report"}
                 </Button>
             }
