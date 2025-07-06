@@ -1,10 +1,10 @@
 import gemini from './gemini';
 
-import { Message } from './types';
+import { AiMessageType } from './types';
 import { generateReportPrompt } from './prompts';
 
 export async function generateReport(
-    messages: Message[],
+    messages: AiMessageType[],
     createdAt: string
 ): Promise<string | null> {
     try {

@@ -1,33 +1,33 @@
-import { continueInterview, getMessagesHistory, getReport, startInterview } from '@/api';
+import { getMessagesHistory, getReport, startInterview } from '@/api';
 import { useAuth } from '@/features/auth';
-import type { MessageType } from '@/types';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import useTextToSpeech from './useTextToSpeech';
-import { useParams } from 'react-router-dom';
 import { devLog } from '@/utils/devUtils';
 import useChatStore from '../stores/chatStore';
 import useInterviewStore from '../stores/interviewStore';
 import useSpeechStore from '../stores/speechStore';
 
 export default function useInterview() {
-    const { interviewId } = useParams();
     const { session, authLoading } = useAuth();
     const { playAudioMessage } = useTextToSpeech();
-    const { autoPlayTextToSpeech } = useSpeechStore();
 
-    const { setIsResponseStreaming, setCurrentStreamingMessage, addMessage, setMessagesHistory } =
-        useChatStore();
-
-    const {
-        setIsInterviewStarting,
-        setInterview,
-        setIsInterviewStarted,
-        setIsInterviewCompleted,
-        setIsFetchingMessages,
-        setReport,
-        setIsFetchingReport,
-    } = useInterviewStore();
+    const autoPlayTextToSpeech = useSpeechStore((state) => state.autoPlayTextToSpeech);
+    const setIsResponseLoading = useChatStore((state) => state.setIsResponseLoading);
+    const setCurrentStreamingMessage = useChatStore((state) => state.setCurrentStreamingMessage);
+    const addMessage = useChatStore((state) => state.addMessage);
+    const setMessagesHistory = useChatStore((state) => state.setMessagesHistory);
+    const ws = useChatStore((state) => state.ws);
+    const setIsInterviewStarting = useInterviewStore((state) => state.setIsInterviewStarting);
+    const setInterview = useInterviewStore((state) => state.setInterview);
+    const setIsInterviewStarted = useInterviewStore((state) => state.setIsInterviewStarted);
+    const setIsInterviewCompleted = useInterviewStore((state) => state.setIsInterviewCompleted);
+    const setIsFetchingMessages = useInterviewStore((state) => state.setIsFetchingMessages);
+    const setIsFetchingReport = useInterviewStore((state) => state.setIsFetchingReport);
+    const setReport = useInterviewStore((state) => state.setReport);
+    const interview = useInterviewStore((state) => state.interview);
+    const isInterviewCompleted = useInterviewStore((state) => state.isInterviewCompleted);
+    const interviewId = useInterviewStore((state) => state.interviewId);
 
     const startInterviewWithAI = useCallback(async () => {
         const token = session?.access_token;
@@ -75,6 +75,7 @@ export default function useInterview() {
 
             setInterview(startInterviewResponse.data.interview);
             setMessagesHistory(startInterviewResponse.data.messagesHistory);
+            devLog('Messages history', startInterviewResponse.data.messagesHistory.length);
         } catch (error) {
             toast.error('Failed to start interview, Unknown error');
             console.error('Failed to start interview, Unknown error:', error);
@@ -85,83 +86,158 @@ export default function useInterview() {
         }
     }, [session?.access_token, interviewId]);
 
-    const sendMessage = useCallback(async (message: string, token: string, interviewId: string) => {
-        try {
-            devLog('Sending message to AI');
-            setIsResponseStreaming(true);
-            const response = await continueInterview(token, interviewId, message);
-
-            if (!response.ok) {
-                if (response.status >= 400 && response.status < 500) {
-                    toast.error('Unable to send message. Client error');
-                    console.error(`Failed to send message: Client error (${response.status})`);
-                    return;
-                } else if (response.status >= 500) {
-                    toast.error('Unable to send message. Server error');
-                    console.error(`Failed to send message: Server error (${response.status})`);
-                    return;
-                }
-                toast.error('Unable to send message. Unknown error');
-                console.error(`Failed to send message: Unknown error (${response.status})`);
+    const sendMessage = useCallback(
+        async (message: string) => {
+            if (interview?.is_completed || isInterviewCompleted) {
+                toast.error('Interview already completed');
                 return;
             }
-
+            setIsResponseLoading(true);
             try {
-                const reader = response.body?.getReader();
-                if (!reader) {
-                    toast.error('ReadableStream not supported');
-                    console.error('ReadableStream not supported');
+                devLog('Setting isResponseLoading to true');
+                devLog('Sending message to AI');
+
+
+                if (!ws) {
+                    console.error('No WebSocket connection available');
+                    toast.error('No connection available.');
+                    setIsResponseLoading(false);
                     return;
                 }
 
-                const decoder = new TextDecoder();
-                let chunks = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    chunks += chunk;
-                    setCurrentStreamingMessage(chunks);
+                if (ws.readyState !== WebSocket.OPEN) {
+                    console.error('WebSocket not in OPEN state:', ws.readyState);
+                    toast.error('Connection closed.');
+                    setIsResponseLoading(false);
+                    return;
                 }
 
-                const newModelMessage: MessageType = { role: 'model', message: chunks };
-                if (autoPlayTextToSpeech) {
-                    playAudioMessage(chunks);
-                }
-                addMessage(newModelMessage);
-                if (chunks.includes('Thank you for your time. We will get back to you soon.')) {
-                    toast.info('Interview completed');
-                    setIsInterviewCompleted(true);
-                }
+                let responseText = '';
+
+                const handleMessage = (event: MessageEvent) => {
+                    const data = event.data;
+
+                    if (data === '__END_OF_STREAM__') {
+                        addMessage({ role: 'model', message: responseText });
+                        setCurrentStreamingMessage('');
+                        setIsResponseLoading(false);
+                        ws.removeEventListener('message', handleMessage);
+                        if (autoPlayTextToSpeech) {
+                            playAudioMessage(responseText);
+                        }
+                        if (
+                            responseText.includes(
+                                'Thank you for your time, we will get back to you with the results.'
+                            )
+                        ) {
+                            toast.info('Interview completed');
+                            setIsInterviewCompleted(true);
+                        }
+                        return;
+                    }
+
+                    if (data === '__ERROR__') {
+                        console.error('Stream error received');
+                        setCurrentStreamingMessage('');
+                        setIsResponseLoading(false);
+                        ws.removeEventListener('message', handleMessage);
+                        return;
+                    }
+
+                    setIsResponseLoading(false);
+                    responseText += data;
+                    setCurrentStreamingMessage(responseText);
+                };
+
+                ws.addEventListener('message', handleMessage);
+
+                ws.send(message);
+
+                // const response = await continueInterview(token, interviewId, message);
+
+                // if (!response.ok) {
+                //     if (response.status >= 400 && response.status < 500) {
+                //         toast.error('Unable to send message. Client error');
+                //         console.error(`Failed to send message: Client error (${response.status})`);
+                //         return;
+                //     } else if (response.status >= 500) {
+                //         toast.error('Unable to send message. Server error');
+                //         console.error(`Failed to send message: Server error (${response.status})`);
+                //         return;
+                //     }
+                //     toast.error('Unable to send message. Unknown error');
+                //     console.error(`Failed to send message: Unknown error (${response.status})`);
+                //     return;
+                // }
+
+                // try {
+                //     const reader = response.body?.getReader();
+                //     if (!reader) {
+                //         toast.error('ReadableStream not supported');
+                //         console.error('ReadableStream not supported');
+                //         return;
+                //     }
+
+                //     const decoder = new TextDecoder();
+                //     let chunks = '';
+
+                //     while (true) {
+                //         const { done, value } = await reader.read();
+
+                //         if (done) break;
+
+                //         const chunk = decoder.decode(value, { stream: true });
+                //         chunks += chunk;
+                //         setCurrentStreamingMessage(chunks);
+                //     }
+
+                //     const newModelMessage: MessageType = { role: 'model', message: chunks };
+                //     if (autoPlayTextToSpeech) {
+                //         playAudioMessage(chunks);
+                //     }
+                //     addMessage(newModelMessage);
+                //     if (chunks.includes('Thank you for your time. We will get back to you soon.')) {
+                //         toast.info('Interview completed');
+                //         setIsInterviewCompleted(true);
+                //     }
+                // } catch (error) {
+                //     const resJson = await response.json();
+                //     if (resJson.error) {
+                //         toast.error(resJson.error.message);
+                //         console.error(
+                //             'Failed to send message, Error from server:',
+                //             resJson.error,
+                //             error
+                //         );
+                //     }
+
+                //     if (resJson.message) {
+                //         toast.info(resJson.message);
+                //     }
+                // } finally {
+                //     setIsResponseLoading(false);
+                //     setCurrentStreamingMessage('');
+                // }
             } catch (error) {
-                const resJson = await response.json();
-                if (resJson.error) {
-                    toast.error(resJson.error.message);
-                    console.error(
-                        'Failed to send message, Error from server:',
-                        resJson.error,
-                        error
-                    );
-                }
-
-                if (resJson.message) {
-                    toast.info(resJson.message);
-                }
+                toast.error('Unknown error from server');
+                console.error('Unknown error from server:', error);
+                setIsResponseLoading(false);
             } finally {
-                setIsResponseStreaming(false);
                 setCurrentStreamingMessage('');
             }
-        } catch (error) {
-            toast.error('Unknown error from server');
-            console.error('Unknown error from server:', error);
-        } finally {
-            setIsResponseStreaming(false);
-            setCurrentStreamingMessage('');
-        }
-    }, [autoPlayTextToSpeech]);
+        },
+        [
+            ws,
+            autoPlayTextToSpeech,
+            addMessage,
+            setCurrentStreamingMessage,
+            setIsResponseLoading,
+            setIsInterviewCompleted,
+            playAudioMessage,
+            interview?.is_completed,
+            isInterviewCompleted,
+        ]
+    );
 
     const getMessages = useCallback(async () => {
         const token = session?.access_token;

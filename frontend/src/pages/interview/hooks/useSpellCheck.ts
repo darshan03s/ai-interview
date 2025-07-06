@@ -5,7 +5,7 @@ import { useState } from 'react';
 import useInterviewStore from '../stores/interviewStore';
 
 export default function useSpellCheck() {
-    const { interview } = useInterviewStore();
+    const interview = useInterviewStore((state) => state.interview);
     const { session } = useAuth();
     const [isSpellChecking, setIsSpellChecking] = useState(false);
 

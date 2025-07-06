@@ -6,9 +6,16 @@ import interviewRoutes from '@routes/interviewRoutes';
 import spellCheckRoutes from '@routes/spellCheckRoutes';
 import testRoutes from '@routes/testRoutes';
 import authenticate from '@middlewares/authenticate';
-import { exec } from 'child_process';
+import { WebSocketServer } from 'ws';
+import { createServer } from 'http';
+import { messagesCache } from './controllers/interviewControllers';
+import { GeminiClient } from './llm/geminiClient';
+import { systemPrompt } from './llm/prompts';
+import { createMessage, updateInterview } from './db/supabaseUtils';
 
 const app = express();
+const expressServer = createServer(app);
+export const wss = new WebSocketServer({ server: expressServer });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -42,10 +49,12 @@ process.on('exit', (code) => {
 
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM signal');
+    process.exit(0);
 });
 
 process.on('SIGINT', () => {
     console.log('Received SIGINT signal');
+    process.exit(0);
 });
 
 app.get('/', (req: Request, res: Response) => {
@@ -57,8 +66,104 @@ app.use('/spell-check', authenticate, spellCheckRoutes);
 app.use('/test', testRoutes);
 
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
+const server = expressServer.listen(PORT, () => {
     console.log(`Server running at ${PORT}`);
+});
+
+wss.on('connection', (ws) => {
+    console.log('[WS] New client connected');
+    let geminiClient: GeminiClient | null = null;
+    let user_id: string | null = null;
+    let interview_id: string | null = null;
+
+    ws.onmessage = async (event) => {
+        console.log('[WS] Received message:', event.data.toString());
+
+        if (event.data.toString().includes('START_INTERVIEW')) {
+            console.log('[WS] Processing START_INTERVIEW message');
+            user_id = event.data.toString().split(' ')[1];
+            interview_id = event.data.toString().split(' ')[2];
+            if (!user_id || !interview_id) {
+                console.error('[WS] Invalid message format');
+                return;
+            }
+            console.log('[WS] Interview ID:', interview_id);
+
+            const messagesHistory = messagesCache.get(interview_id);
+
+            try {
+                geminiClient = new GeminiClient('flash', messagesHistory || [], systemPrompt);
+                console.log('[WS] Gemini client initialized for interview_id:', interview_id);
+            } catch (error) {
+                console.error('[WS] Error initializing Gemini client:', error);
+            }
+        } else if (event.data.toString().includes('END_INTERVIEW')) {
+            console.log(
+                '[WS] Ending interview and closing connection for interview_id:',
+                interview_id
+            );
+            geminiClient = null;
+            ws.close();
+            return;
+        } else {
+            const newMessage = event.data.toString();
+            createMessage(user_id!, interview_id!, newMessage, 'user', [
+                {
+                    text: newMessage,
+                },
+            ]);
+            try {
+                const streamGenerator = await geminiClient!.chatWithGeminiStream(newMessage);
+
+                let modelReplyRaw = '';
+                for await (const chunk of streamGenerator) {
+                    if (chunk.text) {
+                        modelReplyRaw += chunk.text;
+                        ws.send(chunk.text);
+                    } else {
+                        ws.send('No response from AI');
+                    }
+                }
+                ws.send('__END_OF_STREAM__');
+                createMessage(user_id!, interview_id!, modelReplyRaw, 'model', [
+                    { text: modelReplyRaw },
+                ]);
+                if (
+                    modelReplyRaw.includes(
+                        'Thank you for your time, we will get back to you with the results.'
+                    )
+                ) {
+                    updateInterview(user_id!, interview_id!, true);
+                    geminiClient = null;
+                    ws.close();
+                    console.log(
+                        '[WS] Ending interview and closing connection for interview_id:',
+                        interview_id
+                    );
+                }
+            } catch (error) {
+                console.error('Streaming error:', error);
+                ws.send('__ERROR__');
+            }
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('[WS] Client disconnected');
+        geminiClient = null;
+    };
+
+    ws.onerror = (error) => {
+        console.error('[WS] WebSocket error:', error);
+    };
+});
+
+wss.on('error', (error) => {
+    console.error('WebSocket server error:', error);
+});
+
+wss.on('close', () => {
+    console.log('WebSocket server closed');
 });
 
 type ServerError = Error & {
@@ -67,52 +172,10 @@ type ServerError = Error & {
 
 server.on('error', (error: ServerError) => {
     if (error.code === 'EADDRINUSE') {
-        console.log('Port is already in use. Killing process...');
-        if (process.platform === 'win32') {
-            exec(`netstat -ano | findstr ${PORT}`, (err, stdout, stderr) => {
-                if (err) {
-                    console.error('Error executing netstat command:', err);
-                    return;
-                }
-                if (stderr) {
-                    console.error('Command stderr:', stderr);
-                    return;
-                }
-                const pid = stdout.split('\n')[0].trim().split(/\s+/)[4];
-                console.log('Process using port:', pid);
-                exec(`taskkill /PID ${pid} /F`, (killErr, killStdout) => {
-                    if (killErr) {
-                        console.error('Error killing process:', killErr);
-                        return;
-                    }
-                    console.log(killStdout);
-                });
-            });
-        } else {
-            // Mac and Linux
-            exec(`lsof -i :${PORT} | grep LISTEN`, (err, stdout, stderr) => {
-                if (err) {
-                    console.error('Error finding process:', err);
-                    process.exit(1);
-                }
-                if (stderr) {
-                    console.error('Command stderr:', stderr);
-                    process.exit(1);
-                }
-                const pid = stdout.trim().split(/\s+/)[1];
-                console.log('Process using port:', pid);
-                exec(`kill -9 ${pid}`, (killErr, killStdout) => {
-                    if (killErr) {
-                        console.error('Error killing process:', killErr);
-                        process.exit(1);
-                    }
-                    if (killStdout) {
-                        console.log(killStdout);
-                    }
-                });
-            });
-        }
+        console.log('Port is already in use');
+        process.exit(1);
     } else {
         console.error('An error occurred while starting the server.', error);
+        process.exit(1);
     }
 });

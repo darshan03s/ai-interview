@@ -31,7 +31,7 @@ export type ReportType = {
     interview_id: string;
 };
 
-export type MessageType = {
+export type ConversationMessageType = {
     role: 'user' | 'model';
     message: string;
 };

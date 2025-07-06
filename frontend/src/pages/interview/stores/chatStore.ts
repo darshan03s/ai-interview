@@ -9,21 +9,21 @@ interface ChatStore {
     setCurrentStreamingMessage: (message: string) => void;
     isResponseLoading: boolean;
     setIsResponseLoading: (isLoading: boolean) => void;
-    isResponseStreaming: boolean;
-    setIsResponseStreaming: (isStreaming: boolean) => void;
+    ws: WebSocket | null;
+    setWs: (ws: WebSocket | null) => void;
 }
 
 const useChatStore = create<ChatStore>((set) => ({
     messagesHistory: [],
     currentStreamingMessage: '',
     isResponseLoading: false,
-    isResponseStreaming: false,
     setMessagesHistory: (messagesHistory: MessageType[]) => set({ messagesHistory }),
     addMessage: (message: MessageType) =>
         set((state) => ({ messagesHistory: [...state.messagesHistory, message] })),
     setCurrentStreamingMessage: (message: string) => set({ currentStreamingMessage: message }),
     setIsResponseLoading: (isLoading: boolean) => set({ isResponseLoading: isLoading }),
-    setIsResponseStreaming: (isStreaming: boolean) => set({ isResponseStreaming: isStreaming }),
+    ws: null,
+    setWs: (ws: WebSocket | null) => set({ ws }),
 }));
 
 export default useChatStore;

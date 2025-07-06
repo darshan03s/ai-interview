@@ -1,6 +1,6 @@
-import { Part } from "@google/genai";
+import { Part } from '@google/genai';
 
-export type Message = {
+export type AiMessageType = {
     role: string;
     parts: Part[];
 };

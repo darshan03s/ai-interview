@@ -1,7 +1,11 @@
-import { InterviewType, ReportType } from '@/types';
 import supabase from './supabase';
 import { Part } from '@google/genai';
 // import { mdToPdf } from "@utils/mdToPdf";
+import type { Tables } from './supabaseType';
+
+type InterviewRow = Tables<'interviews'>;
+type MessageRow = Tables<'messages'>;
+type ReportRow = Tables<'reports'>;
 
 export const uploadFile = async (file: Express.Multer.File) => {
     const { nanoid: generateNanoid } = await import('nanoid');
@@ -24,7 +28,7 @@ export const createInterview = async (
     file: Express.Multer.File,
     interview_type: string,
     title: string
-): Promise<InterviewType | null> => {
+): Promise<InterviewRow | null> => {
     const { data: fileData, error: fileError } = await uploadFile(file);
     if (fileError) {
         console.error('Error uploading file to supabase:', fileError);
@@ -64,7 +68,7 @@ export const createInterview = async (
 export const getInterview = async (
     user_id: string,
     interview_id: string
-): Promise<InterviewType | null> => {
+): Promise<InterviewRow | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .select('*')
@@ -82,7 +86,7 @@ export const updateInterview = async (
     user_id: string,
     interview_id: string,
     is_completed: boolean
-): Promise<InterviewType | null> => {
+): Promise<InterviewRow | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .update({ is_completed })
@@ -101,7 +105,7 @@ export const createMessage = async (
     message: string,
     role: string,
     parts: Part[]
-) => {
+): Promise<MessageRow | null> => {
     const { data, error } = await supabase
         .from('messages')
         .insert({ user_id, interview_id, message, role, parts })
@@ -114,7 +118,10 @@ export const createMessage = async (
     return data;
 };
 
-export const getMessages = async (interview_id: string, user_id: string) => {
+export const getMessages = async (
+    interview_id: string,
+    user_id: string
+): Promise<MessageRow[] | null> => {
     const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -146,7 +153,7 @@ const extractFilePathFromSignedUrl = (signedUrl: string): string | null => {
     }
 };
 
-export const deleteInterview = async (interview_id: string) => {
+export const deleteInterview = async (interview_id: string): Promise<InterviewRow | null> => {
     const { data: interviewData, error: getError } = await supabase
         .from('interviews')
         .select('resume_url')
@@ -185,7 +192,10 @@ export const deleteInterview = async (interview_id: string) => {
     return data;
 };
 
-export const renameInterview = async (interview_id: string, new_name: string) => {
+export const renameInterview = async (
+    interview_id: string,
+    new_name: string
+): Promise<InterviewRow | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .update({ title: new_name })
@@ -197,7 +207,7 @@ export const renameInterview = async (interview_id: string, new_name: string) =>
     return data;
 };
 
-export const getInterviews = async (user_id: string): Promise<InterviewType[] | null> => {
+export const getInterviews = async (user_id: string): Promise<InterviewRow[] | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .select('*')
@@ -213,7 +223,7 @@ export const getInterviews = async (user_id: string): Promise<InterviewType[] | 
 export const getReport = async (
     user_id: string,
     interview_id: string
-): Promise<ReportType | null> => {
+): Promise<ReportRow | null> => {
     const { data, error } = await supabase
         .from('reports')
         .select('*')
@@ -236,7 +246,7 @@ export const createReport = async (
     report: string,
     report_url: string,
     is_created: boolean = false
-): Promise<ReportType | null> => {
+): Promise<ReportRow | null> => {
     const { data, error } = await supabase
         .from('reports')
         .insert({ user_id, interview_id, report, report_pdf: report_url, is_created: is_created })
@@ -255,7 +265,7 @@ export const updateReport = async (
     report: string,
     report_url: string,
     is_created: boolean
-): Promise<ReportType | null> => {
+): Promise<ReportRow | null> => {
     const { data, error } = await supabase
         .from('reports')
         .update({ report, report_pdf: report_url, is_created: is_created })
@@ -293,7 +303,10 @@ export const updateReport = async (
 //     return signedUrlData.signedUrl;
 // };
 
-export const endInterview = async (interview_id: string, user_id: string) => {
+export const endInterview = async (
+    interview_id: string,
+    user_id: string
+): Promise<InterviewRow | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .update({ is_completed: true })

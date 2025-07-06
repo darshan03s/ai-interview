@@ -8,7 +8,8 @@ import useInterviewStore from "../stores/interviewStore";
 const Report = () => {
     const reportTitleRef = useRef<HTMLHeadingElement>(null);
     const { fetchReport } = useInterview();
-    const { report, isFetchingReport } = useInterviewStore();
+    const report = useInterviewStore(state => state.report);
+    const isFetchingReport = useInterviewStore(state => state.isFetchingReport);
 
     useEffect(() => {
         if (reportTitleRef.current) {

@@ -11,9 +11,20 @@ import useSpeechStore from "../stores/speechStore";
 const UserInputArea = () => {
     const { session } = useAuth();
     const [userMessage, setUserMessage] = useState<string>("");
-    const { addMessage, isResponseStreaming } = useChatStore();
-    const { speechRecognition, setSpeechRecognition, isAiResponsePlaying } = useSpeechStore();
-    const { interviewId, interview, isRecording, setIsInterviewCompleted, setIsRecording, setIsInterviewEnding, isInterviewStarted, isInterviewCompleted } = useInterviewStore();
+    const addMessage = useChatStore(state => state.addMessage);
+    const isResponseLoading = useChatStore(state => state.isResponseLoading);
+    const ws = useChatStore(state => state.ws);
+    const speechRecognition = useSpeechStore(state => state.speechRecognition)
+    const setSpeechRecognition = useSpeechStore(state => state.setSpeechRecognition)
+    const isAiResponsePlaying = useSpeechStore(state => state.isAiResponsePlaying)
+    const isInterviewCompleted = useInterviewStore(state => state.isInterviewCompleted)
+    const isRecording = useInterviewStore(state => state.isRecording)
+    const setIsInterviewCompleted = useInterviewStore(state => state.setIsInterviewCompleted)
+    const setIsRecording = useInterviewStore(state => state.setIsRecording)
+    const setIsInterviewEnding = useInterviewStore(state => state.setIsInterviewEnding)
+    const isInterviewStarted = useInterviewStore(state => state.isInterviewStarted)
+    const interview = useInterviewStore(state => state.interview)
+
     const finalTranscriptRef = useRef<string>('');
     const { sendMessage } = useInterview();
 
@@ -29,6 +40,7 @@ const UserInputArea = () => {
         }
         try {
             setIsInterviewEnding(true);
+            ws?.send(`END_INTERVIEW ${interview?.user_id} ${interview?.interview_id}`);
             await endInterview(token, interview.interview_id!);
             setIsInterviewCompleted(true);
         } catch (error) {
@@ -54,11 +66,10 @@ const UserInputArea = () => {
         }
 
         addMessage({ role: "user", message: userMessage });
-        sendMessage(userMessage, token, interviewId!);
+        sendMessage(userMessage);
         setUserMessage('');
     };
 
-    // Handle keyboard events (only Enter key)
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -66,7 +77,6 @@ const UserInputArea = () => {
         }
     };
 
-    // Handle button click
     const handleSendButtonClick = () => {
         executeSendMessage();
     };
@@ -184,7 +194,7 @@ const UserInputArea = () => {
                         onKeyDown={handleKeyDown}
                         placeholder="Type your answer here..."
                         className="w-full text-xs xl:text-base hide-scrollbar bg-transparent resize-none outline-none placeholder:text-muted-foreground h-25 xl:h-full leading-relaxed"
-                        disabled={isResponseStreaming}
+                        disabled={isResponseLoading}
                     />
                     <div className="user-input-actions-xl flex flex-col gap-2">
                         <UserInputActions
@@ -202,7 +212,7 @@ const UserInputArea = () => {
                     onKeyDown={handleKeyDown}
                     placeholder="Type your answer here..."
                     className="xl:hidden w-full text-xs xl:text-base hide-scrollbar bg-transparent resize-none outline-none placeholder:text-muted-foreground h-25 xl:h-full leading-relaxed"
-                    disabled={isResponseStreaming}
+                    disabled={isResponseLoading}
                 />
             </div>
             <div className="px-3 py-3 flex flex-col xl:flex-row items-center justify-between">

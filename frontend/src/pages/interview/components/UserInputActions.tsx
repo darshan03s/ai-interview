@@ -24,9 +24,12 @@ const UserInputActions = ({
     setUserMessage
 }: UserInputActionsProps) => {
 
-    const { interview, isInterviewCompleted, isRecording, isInterviewEnding } = useInterviewStore();
-    const { isResponseStreaming } = useChatStore();
-    const { autoPlayTextToSpeech } = useSpeechStore();
+    const interview = useInterviewStore(state => state.interview);
+    const isInterviewCompleted = useInterviewStore(state => state.isInterviewCompleted);
+    const isRecording = useInterviewStore(state => state.isRecording);
+    const isInterviewEnding = useInterviewStore(state => state.isInterviewEnding);
+    const isResponseLoading = useChatStore(state => state.isResponseLoading);
+    const autoPlayTextToSpeech = useSpeechStore(state => state.autoPlayTextToSpeech);
     const { toggleAutoPlayTextToSpeech } = useTextToSpeech();
     const { aiSpellCheck, isSpellChecking } = useSpellCheck();
 
@@ -71,7 +74,7 @@ const UserInputActions = ({
                         <TooltipTrigger asChild>
                             <button
                                 onClick={handleEndInterview}
-                                disabled={isResponseStreaming || interview?.is_completed || isRecording || isInterviewCompleted || isInterviewEnding}
+                                disabled={isResponseLoading || interview?.is_completed || isRecording || isInterviewCompleted || isInterviewEnding}
                                 className={`bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                             >
                                 {isInterviewEnding ? (
@@ -91,7 +94,7 @@ const UserInputActions = ({
                 <TooltipTrigger asChild>
                     <button
                         onClick={handleVoiceInput}
-                        disabled={isResponseStreaming || interview?.is_completed || isInterviewCompleted}
+                        disabled={isResponseLoading || interview?.is_completed || isInterviewCompleted}
                         className={`${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary'} text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
                         <Mic className="h-4 w-4" />
@@ -138,10 +141,10 @@ const UserInputActions = ({
                 <TooltipTrigger asChild>
                     <button
                         onClick={handleSendMessage}
-                        disabled={!userMessage?.trim() || isResponseStreaming || interview?.is_completed || isInterviewCompleted}
+                        disabled={!userMessage?.trim() || isResponseLoading || interview?.is_completed || isInterviewCompleted}
                         className={`bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
                     >
-                        {isResponseStreaming ? (
+                        {isResponseLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                             <SendIcon className="h-4 w-4" />

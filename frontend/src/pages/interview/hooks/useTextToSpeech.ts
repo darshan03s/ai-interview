@@ -2,13 +2,11 @@ import { toast } from 'sonner';
 import useSpeechStore from '../stores/speechStore';
 
 export default function useTextToSpeech() {
-    const {
-        autoPlayTextToSpeech,
-        setAutoPlayTextToSpeech,
-        setIsAiResponsePlaying,
-        voice,
-        setCurrentlyPlayingMessage,
-    } = useSpeechStore();
+    const autoPlayTextToSpeech = useSpeechStore((state) => state.autoPlayTextToSpeech);
+    const setAutoPlayTextToSpeech = useSpeechStore((state) => state.setAutoPlayTextToSpeech);
+    const setIsAiResponsePlaying = useSpeechStore((state) => state.setIsAiResponsePlaying);
+    const voice = useSpeechStore((state) => state.voice);
+    const setCurrentlyPlayingMessage = useSpeechStore((state) => state.setCurrentlyPlayingMessage);
 
     const playAudioMessage = async (message: string): Promise<void> => {
         try {

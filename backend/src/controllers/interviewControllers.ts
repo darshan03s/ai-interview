@@ -17,15 +17,24 @@ import {
 import gemini from '@llm/gemini';
 import { systemPrompt } from '@llm/prompts';
 import { generateReport } from '@llm/generateReport';
-import { Message } from '@llm/types';
-import type { ApiResponseType } from '@/types';
+import { AiMessageType } from '@llm/types';
+import type { ApiResponseType, ConversationMessageType } from '@/types';
 import { User } from '@supabase/supabase-js';
+import { LRUCache } from 'lru-cache';
+import { Part } from '@google/genai';
 
 declare module 'express-serve-static-core' {
     interface Request {
         user: User;
     }
 }
+
+export const messagesCache = new LRUCache<string, AiMessageType[]>({
+    max: 500,
+    ttl: 1000 * 60 * 60,
+    allowStale: false,
+    updateAgeOnGet: false,
+});
 
 export async function createInterviewController(req: Request, res: Response<ApiResponseType>) {
     const { username, interview_type, date } = req.body;
@@ -70,26 +79,6 @@ export async function createInterviewController(req: Request, res: Response<ApiR
     }
     await createReport(user.id, interview.interview_id, '', '');
 
-    const pdfResp = await fetch(interview.resume_url).then((response) => response.arrayBuffer());
-
-    await createMessage(
-        user.id,
-        interview.interview_id,
-        `Here is my resume. I have chosen to do a ${interview_type} interview.`,
-        'user',
-        [
-            {
-                text: `Here is my resume. I have chosen to do a ${interview_type} interview.`,
-            },
-            {
-                inlineData: {
-                    mimeType: 'application/pdf',
-                    data: Buffer.from(pdfResp).toString('base64'),
-                },
-            },
-        ]
-    );
-
     res.status(200).json({
         success: true,
         message: 'Interview created successfully',
@@ -129,6 +118,9 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
 
     try {
         const messagesHistory = await getMessages(interview_id, user.id);
+        let messagesHistoryForConversation: ConversationMessageType[] = [];
+        let messagesHistoryForAi: AiMessageType[] = [];
+
         if (!messagesHistory) {
             res.status(500).json({
                 success: false,
@@ -137,43 +129,59 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
             return;
         }
         if (messagesHistory.length === 0) {
-            const pdfResp = await fetch(interview.resume_url).then((response) =>
+            const pdfResp = await fetch(interview.resume_url!).then((response) =>
                 response.arrayBuffer()
             );
+            const partArray: Part[] = [
+                {
+                    text: `Here is my resume. I have chosen to do a ${interview.interview_type} interview.`,
+                },
+                {
+                    inlineData: {
+                        mimeType: 'application/pdf',
+                        data: Buffer.from(pdfResp).toString('base64'),
+                    },
+                },
+            ];
             await createMessage(
                 user.id,
                 interview_id,
                 `Here is my resume. I have chosen to do a ${interview.interview_type} interview.`,
                 'user',
-                [
-                    {
-                        text: `Here is my resume. I have chosen to do a ${interview.interview_type} interview.`,
-                    },
-                    {
-                        inlineData: {
-                            mimeType: 'application/pdf',
-                            data: Buffer.from(pdfResp).toString('base64'),
-                        },
-                    },
-                ]
+                partArray
             );
+            messagesHistoryForAi.push({
+                role: 'user',
+                parts: partArray,
+            });
         }
 
-        const messagesHistoryTransformed: { role: string; message: string }[] = [];
+        messagesHistory.forEach((message) => {
+            messagesHistoryForAi.push({
+                role: message.role as 'user' | 'model',
+                parts: message.parts as Part[],
+            });
+        });
+
+        messagesCache.set(interview_id, messagesHistoryForAi as AiMessageType[]);
+
         if (messagesHistory.length > 0) {
             messagesHistory.forEach((message) => {
-                messagesHistoryTransformed.push({
-                    role: message.role,
-                    message: message.message,
+                messagesHistoryForConversation.push({
+                    role: message.role as 'user' | 'model',
+                    message: message.message!,
                 });
             });
         }
+
+        messagesHistoryForConversation = messagesHistoryForConversation.slice(1);
+
         res.status(200).json({
             success: true,
             message: 'Interview prepared successfully',
             data: {
                 interview,
-                messagesHistory: messagesHistoryTransformed,
+                messagesHistory: messagesHistoryForConversation,
             },
         });
         return;
@@ -189,6 +197,7 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
 
 export async function continueInterviewController(req: Request, res: Response<ApiResponseType>) {
     const { interview_id, message } = req.body;
+    // 1. Check if interview_id and message are provided
     if (!interview_id) {
         res.status(400).json({
             success: false,
@@ -196,6 +205,8 @@ export async function continueInterviewController(req: Request, res: Response<Ap
         });
         return;
     }
+
+    // 2. Check if message is provided
     if (!message) {
         res.status(400).json({
             success: false,
@@ -204,6 +215,7 @@ export async function continueInterviewController(req: Request, res: Response<Ap
         return;
     }
 
+    // 3. Check if user is authenticated
     const user = req.user;
     if (!user) {
         res.status(401).json({
@@ -213,6 +225,7 @@ export async function continueInterviewController(req: Request, res: Response<Ap
         return;
     }
 
+    // 4. Check if interview exists
     const interview = await getInterview(user.id, interview_id);
     if (!interview) {
         res.status(404).json({
@@ -222,6 +235,7 @@ export async function continueInterviewController(req: Request, res: Response<Ap
         return;
     }
 
+    // 5. Check if interview is completed
     if (interview.is_completed) {
         res.status(200).json({
             success: true,
@@ -234,8 +248,11 @@ export async function continueInterviewController(req: Request, res: Response<Ap
     console.log('Continuing interview for user:', user.id, interview_id);
 
     try {
+        // 6. Get messages history
         const messagesHistory = await getMessages(interview_id, user.id);
-        const messages: Message[] = [];
+        const messages: AiMessageType[] = [];
+
+        // 7. Check if messages history is found
         if (!messagesHistory) {
             res.status(500).json({
                 success: false,
@@ -243,12 +260,16 @@ export async function continueInterviewController(req: Request, res: Response<Ap
             });
             return;
         }
+
+        // 8. Transform messages history to for AI
         messagesHistory.forEach((message) => {
             messages.push({
-                role: message.role,
-                parts: message.parts,
+                role: message.role as 'user' | 'model',
+                parts: message.parts as Part[],
             });
         });
+
+        // 9. Add new message to messages history for AI
         messages.push({
             role: 'user',
             parts: [
@@ -257,12 +278,15 @@ export async function continueInterviewController(req: Request, res: Response<Ap
                 },
             ],
         });
+
+        // 10. Create new message in database for user
         await createMessage(user.id, interview_id, message, 'user', [
             {
                 text: message,
             },
         ]);
 
+        // 11. Generate response from AI
         const stream = await gemini.models.generateContentStream({
             model: 'gemini-2.5-flash',
             contents: messages,
@@ -279,6 +303,7 @@ export async function continueInterviewController(req: Request, res: Response<Ap
             },
         });
 
+        // 12. Send response stream, combine chunks to a single string
         let modelReplyRaw = '';
         for await (const chunk of stream) {
             modelReplyRaw += chunk.text;
@@ -287,14 +312,18 @@ export async function continueInterviewController(req: Request, res: Response<Ap
 
         res.end();
 
+        // 13. Create new message in database from response
         await createMessage(user.id, interview_id, modelReplyRaw, 'model', [
             { text: modelReplyRaw },
         ]);
+
+        // 14. Check if response contains end of interview message
         if (
             modelReplyRaw.includes(
                 'Thank you for your time, we will get back to you with the results.'
             )
         ) {
+            // 15. Update interview as completed
             await updateInterview(user.id, interview_id, true);
         }
     } catch (error) {
@@ -338,11 +367,11 @@ export async function getMessagesController(req: Request, res: Response<ApiRespo
             return;
         }
 
-        let messagesHistory: { role: string; message: string }[] = [];
+        let messagesHistory: ConversationMessageType[] = [];
         messages.forEach((message) => {
             messagesHistory.push({
-                role: message.role,
-                message: message.message,
+                role: message.role as 'user' | 'model',
+                message: message.message!,
             });
         });
 
@@ -514,11 +543,11 @@ export async function getReportController(req: Request, res: Response<ApiRespons
             return;
         }
 
-        const messages: Message[] = [];
+        const messages: AiMessageType[] = [];
         messagesHistory.forEach((message) => {
             messages.push({
-                role: message.role,
-                parts: message.parts,
+                role: message.role as 'user' | 'model',
+                parts: message.parts as Part[],
             });
         });
 

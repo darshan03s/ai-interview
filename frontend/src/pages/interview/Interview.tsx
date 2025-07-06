@@ -8,7 +8,6 @@ import DisplayMessages from "./components/DisplayMessages";
 import UserInputArea from "./components/UserInputArea";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
-import { isDevMode } from "@/utils/devUtils";
 import { Badge } from "@/components/ui/badge";
 import useInterviewStore from "./stores/interviewStore";
 import { toast } from "sonner";
@@ -19,23 +18,31 @@ const Interview = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const { interviewId } = useParams();
     const { authLoading } = useAuth();
-    const { setInterviewId } = useInterviewStore();
-    const { speechRecognition, setSpeechRecognition, setVoice } = useSpeechStore();
+    const setInterviewId = useInterviewStore((state) => state.setInterviewId);
+    const speechRecognition = useSpeechStore((state) => state.speechRecognition);
+    const setSpeechRecognition = useSpeechStore((state) => state.setSpeechRecognition);
+    const setVoice = useSpeechStore((state) => state.setVoice);
 
     const {
         fetchReport,
         startInterviewWithAI,
     } = useInterview();
-    
-    const { messagesHistory } = useChatStore();
-    const { isInterviewStarted, isInterviewCompleted, interview, report, isInterviewStarting, isRecording } = useInterviewStore();
+
+    const { messagesHistory, setWs } = useChatStore();
+    const isInterviewStarted = useInterviewStore((state) => state.isInterviewStarted);
+    const isInterviewCompleted = useInterviewStore((state) => state.isInterviewCompleted);
+    const setIsInterviewCompleted = useInterviewStore((state) => state.setIsInterviewCompleted);
+    const interview = useInterviewStore((state) => state.interview);
+    const report = useInterviewStore((state) => state.report);
+    const isInterviewStarting = useInterviewStore((state) => state.isInterviewStarting);
+    const isRecording = useInterviewStore((state) => state.isRecording);
 
     useEffect(() => {
         if (interviewId) {
             setInterviewId(interviewId);
         }
     }, [interviewId, setInterviewId]);
-    
+
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -44,12 +51,39 @@ const Interview = () => {
 
     useEffect(() => {
         if (!authLoading && interviewId) {
-            if (isDevMode) {
-                if (isInterviewStarted) return;
-            }
             startInterviewWithAI();
         }
     }, [authLoading, interviewId, startInterviewWithAI]);
+
+    useEffect(() => {
+        if (!authLoading && isInterviewStarted && interviewId && !interview?.is_completed) {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const ws = new WebSocket(`${wsProtocol}://${import.meta.env.VITE_API_URL.split("//")[1]}`);
+
+            ws.onopen = () => {
+                console.log('[WS] Connected to server');
+                ws.send(`START_INTERVIEW ${interview?.user_id} ${interview?.interview_id}`);
+            };
+
+            ws.onerror = (error) => {
+                console.error('[WS] Connection error:', error);
+                toast.error('Failed to connect to interview service');
+            };
+
+            setWs(ws);
+
+            ws.onclose = () => {
+                console.log('[WS] Connection closed');
+            }
+
+            return () => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(`END_INTERVIEW ${interview?.user_id} ${interview?.interview_id}`);
+                }
+                ws.close();
+            };
+        }
+    }, [authLoading, isInterviewStarted, interviewId, setWs, interview?.is_completed]);
 
     useEffect(() => {
         if (interview?.is_completed) {
@@ -62,6 +96,7 @@ const Interview = () => {
             if (speechRecognition) {
                 speechRecognition.stop();
                 setSpeechRecognition(null);
+                setIsInterviewCompleted(false);
             }
         };
     }, [interviewId]);
