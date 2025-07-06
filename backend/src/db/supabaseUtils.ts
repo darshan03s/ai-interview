@@ -1,3 +1,4 @@
+import { InterviewType, ReportType } from '@/types';
 import supabase from './supabase';
 import { Part } from '@google/genai';
 // import { mdToPdf } from "@utils/mdToPdf";
@@ -23,7 +24,7 @@ export const createInterview = async (
     file: Express.Multer.File,
     interview_type: string,
     title: string
-) => {
+): Promise<InterviewType | null> => {
     const { data: fileData, error: fileError } = await uploadFile(file);
     if (fileError) {
         console.error('Error uploading file to supabase:', fileError);
@@ -60,7 +61,10 @@ export const createInterview = async (
     return data;
 };
 
-export const getInterview = async (user_id: string, interview_id: string) => {
+export const getInterview = async (
+    user_id: string,
+    interview_id: string
+): Promise<InterviewType | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .select('*')
@@ -78,7 +82,7 @@ export const updateInterview = async (
     user_id: string,
     interview_id: string,
     is_completed: boolean
-) => {
+): Promise<InterviewType | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .update({ is_completed })
@@ -193,7 +197,7 @@ export const renameInterview = async (interview_id: string, new_name: string) =>
     return data;
 };
 
-export const getInterviews = async (user_id: string) => {
+export const getInterviews = async (user_id: string): Promise<InterviewType[] | null> => {
     const { data, error } = await supabase
         .from('interviews')
         .select('*')
@@ -206,7 +210,10 @@ export const getInterviews = async (user_id: string) => {
     return data;
 };
 
-export const getReport = async (user_id: string, interview_id: string) => {
+export const getReport = async (
+    user_id: string,
+    interview_id: string
+): Promise<ReportType | null> => {
     const { data, error } = await supabase
         .from('reports')
         .select('*')
@@ -229,7 +236,7 @@ export const createReport = async (
     report: string,
     report_url: string,
     is_created: boolean = false
-) => {
+): Promise<ReportType | null> => {
     const { data, error } = await supabase
         .from('reports')
         .insert({ user_id, interview_id, report, report_pdf: report_url, is_created: is_created })
@@ -248,7 +255,7 @@ export const updateReport = async (
     report: string,
     report_url: string,
     is_created: boolean
-) => {
+): Promise<ReportType | null> => {
     const { data, error } = await supabase
         .from('reports')
         .update({ report, report_pdf: report_url, is_created: is_created })

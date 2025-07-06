@@ -61,8 +61,6 @@ export async function createInterviewController(req: Request, res: Response<ApiR
     const title = `${interview_type.charAt(0).toUpperCase() + interview_type.slice(1)} Interview - ${date}`;
 
     const interview = await createInterview(user.id, username, file, interview_type, title);
-    await createReport(user.id, interview.interview_id, '', '');
-
     if (!interview) {
         res.status(500).json({
             success: false,
@@ -70,6 +68,27 @@ export async function createInterviewController(req: Request, res: Response<ApiR
         });
         return;
     }
+    await createReport(user.id, interview.interview_id, '', '');
+
+    const pdfResp = await fetch(interview.resume_url).then((response) => response.arrayBuffer());
+
+    await createMessage(
+        user.id,
+        interview.interview_id,
+        `Here is my resume. I have chosen to do a ${interview_type} interview.`,
+        'user',
+        [
+            {
+                text: `Here is my resume. I have chosen to do a ${interview_type} interview.`,
+            },
+            {
+                inlineData: {
+                    mimeType: 'application/pdf',
+                    data: Buffer.from(pdfResp).toString('base64'),
+                },
+            },
+        ]
+    );
 
     res.status(200).json({
         success: true,
@@ -140,11 +159,24 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
             );
         }
 
+        const messagesHistoryTransformed: { role: string; message: string }[] = [];
+        if (messagesHistory.length > 0) {
+            messagesHistory.forEach((message) => {
+                messagesHistoryTransformed.push({
+                    role: message.role,
+                    message: message.message,
+                });
+            });
+        }
         res.status(200).json({
             success: true,
             message: 'Interview prepared successfully',
-            data: interview,
+            data: {
+                interview,
+                messagesHistory: messagesHistoryTransformed,
+            },
         });
+        return;
     } catch (error) {
         console.error('Error preparing interview:', error);
         res.status(500).json({
@@ -491,7 +523,7 @@ export async function getReportController(req: Request, res: Response<ApiRespons
         });
 
         const interview = await getInterview(user.id, interview_id);
-        report = await generateReport(messages, new Date(interview.created_at).toLocaleString());
+        report = await generateReport(messages, new Date(interview!.created_at).toLocaleString());
         if (!report) {
             res.status(500).json({
                 success: false,

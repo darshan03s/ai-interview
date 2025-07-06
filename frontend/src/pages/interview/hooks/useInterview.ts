@@ -38,6 +38,7 @@ export default function useInterview() {
         }
         try {
             devLog('Starting interview with AI');
+            setIsFetchingMessages(true);
             setIsInterviewStarting(true);
             const response = await startInterview(token, interviewId!);
             if (!response.ok) {
@@ -72,17 +73,19 @@ export default function useInterview() {
                 return;
             }
 
-            setInterview(startInterviewResponse.data);
+            setInterview(startInterviewResponse.data.interview);
+            setMessagesHistory(startInterviewResponse.data.messagesHistory);
         } catch (error) {
             toast.error('Failed to start interview, Unknown error');
             console.error('Failed to start interview, Unknown error:', error);
         } finally {
             setIsInterviewStarting(false);
             setIsInterviewStarted(true);
+            setIsFetchingMessages(false);
         }
     }, [session?.access_token, interviewId]);
 
-    const sendMessage = async (message: string, token: string, interviewId: string) => {
+    const sendMessage = useCallback(async (message: string, token: string, interviewId: string) => {
         try {
             devLog('Sending message to AI');
             setIsResponseStreaming(true);
@@ -158,7 +161,7 @@ export default function useInterview() {
             setIsResponseStreaming(false);
             setCurrentStreamingMessage('');
         }
-    };
+    }, [autoPlayTextToSpeech]);
 
     const getMessages = useCallback(async () => {
         const token = session?.access_token;

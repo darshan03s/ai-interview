@@ -8,7 +8,7 @@ import DisplayMessages from "./components/DisplayMessages";
 import UserInputArea from "./components/UserInputArea";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
-import { devLog, isDevMode } from "@/utils/devUtils";
+import { isDevMode } from "@/utils/devUtils";
 import { Badge } from "@/components/ui/badge";
 import useInterviewStore from "./stores/interviewStore";
 import { toast } from "sonner";
@@ -22,21 +22,20 @@ const Interview = () => {
     const { setInterviewId } = useInterviewStore();
     const { speechRecognition, setSpeechRecognition, setVoice } = useSpeechStore();
 
+    const {
+        fetchReport,
+        startInterviewWithAI,
+    } = useInterview();
+    
+    const { messagesHistory } = useChatStore();
+    const { isInterviewStarted, isInterviewCompleted, interview, report, isInterviewStarting, isRecording } = useInterviewStore();
+
     useEffect(() => {
         if (interviewId) {
             setInterviewId(interviewId);
         }
     }, [interviewId, setInterviewId]);
-
-    const {
-        fetchReport,
-        startInterviewWithAI,
-        getMessages,
-    } = useInterview();
-
-    const { messagesHistory } = useChatStore();
-    const { isInterviewStarted, isInterviewCompleted, interview, report, isInterviewStarting, isRecording } = useInterviewStore();
-
+    
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -51,15 +50,6 @@ const Interview = () => {
             startInterviewWithAI();
         }
     }, [authLoading, interviewId, startInterviewWithAI]);
-
-    useEffect(() => {
-        if (isDevMode) {
-            if (messagesHistory.length > 0) return;
-        }
-        if (isInterviewStarted && interviewId) {
-            getMessages();
-        }
-    }, [isInterviewStarted, interviewId, getMessages]);
 
     useEffect(() => {
         if (interview?.is_completed) {
@@ -129,8 +119,6 @@ const Interview = () => {
             <PageLoading />
         );
     }
-
-    devLog(interview?.is_completed, isInterviewCompleted);
 
     return (
         <div className="flex flex-col justify-center gap-12 py-4">
