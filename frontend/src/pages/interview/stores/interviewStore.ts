@@ -4,8 +4,6 @@ import { create } from 'zustand';
 interface InterviewStore {
     interview: InterviewType | null;
     setInterview: (interview: InterviewType) => void;
-    interviewId: string | null;
-    setInterviewId: (interviewId: string) => void;
     isRecording: boolean;
     setIsRecording: (isRecording: boolean) => void;
     isInterviewCompleted: boolean;
@@ -27,8 +25,6 @@ interface InterviewStore {
 const useInterviewStore = create<InterviewStore>((set) => ({
     interview: null,
     setInterview: (interview: InterviewType) => set({ interview }),
-    interviewId: null,
-    setInterviewId: (interviewId: string) => set({ interviewId }),
     isRecording: false,
     setIsRecording: (isRecording: boolean) => set({ isRecording }),
     isInterviewCompleted: false,

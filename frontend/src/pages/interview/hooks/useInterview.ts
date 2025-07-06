@@ -7,6 +7,7 @@ import { devLog } from '@/utils/devUtils';
 import useChatStore from '../stores/chatStore';
 import useInterviewStore from '../stores/interviewStore';
 import useSpeechStore from '../stores/speechStore';
+import { useParams } from 'react-router-dom';
 
 export default function useInterview() {
     const { session, authLoading } = useAuth();
@@ -27,7 +28,7 @@ export default function useInterview() {
     const setReport = useInterviewStore((state) => state.setReport);
     const interview = useInterviewStore((state) => state.interview);
     const isInterviewCompleted = useInterviewStore((state) => state.isInterviewCompleted);
-    const interviewId = useInterviewStore((state) => state.interviewId);
+    const { interviewId } = useParams();
 
     const startInterviewWithAI = useCallback(async () => {
         const token = session?.access_token;

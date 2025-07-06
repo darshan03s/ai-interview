@@ -18,7 +18,6 @@ const Interview = () => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const { interviewId } = useParams();
     const { authLoading } = useAuth();
-    const setInterviewId = useInterviewStore((state) => state.setInterviewId);
     const speechRecognition = useSpeechStore((state) => state.speechRecognition);
     const setSpeechRecognition = useSpeechStore((state) => state.setSpeechRecognition);
     const setVoice = useSpeechStore((state) => state.setVoice);
@@ -36,12 +35,6 @@ const Interview = () => {
     const report = useInterviewStore((state) => state.report);
     const isInterviewStarting = useInterviewStore((state) => state.isInterviewStarting);
     const isRecording = useInterviewStore((state) => state.isRecording);
-
-    useEffect(() => {
-        if (interviewId) {
-            setInterviewId(interviewId);
-        }
-    }, [interviewId, setInterviewId]);
 
     useEffect(() => {
         if (messagesContainerRef.current) {
