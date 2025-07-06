@@ -1,6 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CirclePlay, Loader2, Mic, SendIcon, SpellCheck, X } from "lucide-react"
-import { isDevMode } from "@/utils/devUtils"
 import useSpellCheck from "../hooks/useSpellCheck";
 import { useEffect } from "react";
 import useInterviewStore from "../stores/interviewStore";
@@ -68,28 +67,24 @@ const UserInputActions = ({
 
     return (
         <>
-            {
-                isDevMode ?
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={handleEndInterview}
-                                disabled={isResponseLoading || interview?.is_completed || isRecording || isInterviewCompleted || isInterviewEnding}
-                                className={`bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
-                            >
-                                {isInterviewEnding ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <X className="h-4 w-4" />
-                                )}
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side={tooltipSide}>
-                            {isInterviewEnding ? 'Ending interview...' : 'End Interview'}
-                        </TooltipContent>
-                    </Tooltip>
-                    : null
-            }
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        onClick={handleEndInterview}
+                        disabled={isResponseLoading || interview?.is_completed || isRecording || isInterviewCompleted || isInterviewEnding}
+                        className={`bg-destructive text-destructive-foreground p-2 rounded-full hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed! transition-all duration-200 hover:scale-105 active:scale-95`}
+                    >
+                        {isInterviewEnding ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <X className="h-4 w-4" />
+                        )}
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side={tooltipSide}>
+                    {isInterviewEnding ? 'Ending interview...' : 'End Interview'}
+                </TooltipContent>
+            </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
