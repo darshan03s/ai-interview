@@ -21,6 +21,16 @@ import { AiMessageType } from '@llm/types';
 import type { ApiResponseType, ConversationMessageType } from '@/types';
 import { LRUCache } from 'lru-cache';
 import { Part } from '@google/genai';
+import { User } from '@supabase/supabase-js';
+
+declare global {
+    namespace Express {
+        interface Request {
+            user: User;
+        }
+    }
+}
+
 
 export const messagesCache = new LRUCache<string, AiMessageType[]>({
     max: 500,

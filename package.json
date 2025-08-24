@@ -1,0 +1,14 @@
+{
+    "devDependencies": {
+        "husky": "^9.1.7"
+    },
+    "scripts": {
+        "prepare": "husky",
+        "backend:lint": "cd backend && pnpm lint",
+        "backend:build": "cd backend && pnpm build",
+        "frontend:lint": "cd frontend && pnpm lint",
+        "frontend:build": "cd frontend && pnpm build",
+        "lint": "pnpm backend:lint && pnpm frontend:lint",
+        "build": "pnpm backend:build && pnpm frontend:build"
+    }
+}
