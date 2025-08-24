@@ -19,15 +19,8 @@ import { systemPrompt } from '@llm/prompts';
 import { generateReport } from '@llm/generateReport';
 import { AiMessageType } from '@llm/types';
 import type { ApiResponseType, ConversationMessageType } from '@/types';
-import { User } from '@supabase/supabase-js';
 import { LRUCache } from 'lru-cache';
 import { Part } from '@google/genai';
-
-declare module 'express-serve-static-core' {
-    interface Request {
-        user: User;
-    }
-}
 
 export const messagesCache = new LRUCache<string, AiMessageType[]>({
     max: 500,
@@ -119,7 +112,7 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
     try {
         const messagesHistory = await getMessages(interview_id, user.id);
         let messagesHistoryForConversation: ConversationMessageType[] = [];
-        let messagesHistoryForAi: AiMessageType[] = [];
+        const messagesHistoryForAi: AiMessageType[] = [];
 
         if (!messagesHistory) {
             res.status(500).json({
