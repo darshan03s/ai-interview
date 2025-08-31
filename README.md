@@ -1,5 +1,7 @@
 # AI Interview Bot 🤖
 
+[![Watch the demo](https://res.cloudinary.com/dqzusd5rw/image/upload/v1756637294/Screenshot_2025-08-28_185103_uamdl7.png)](https://res.cloudinary.com/dqzusd5rw/image/upload/v1756637294/Screenshot_2025-08-28_185103_uamdl7.png)
+
 A platform that conducts AI-powered mock interviews based on your resume. Get personalized questions, real-time feedback, and detailed performance report.
 
 ## 🌟 Features
