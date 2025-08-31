@@ -47,7 +47,7 @@ A platform that conducts AI-powered mock interviews based on your resume. Get pe
 ### Deployment
 
 -   **Vercel** - Frontend deployment
--   **Railway/Render** - Recommended for backend deployment
+-   **Railway/Render** - Backend deployment
 
 ## 🚀 Getting Started
 
