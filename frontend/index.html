@@ -1,63 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="title" content="InterviewBot" />
-        <meta name="description" content="An AI-powered interview assistant" />
-        <meta name="keywords" content="interview, ai, assistant" />
-        <meta name="author" content="Darshan" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="title" content="InterviewBot" />
+    <meta
+      name="description"
+      content="InterviewBot is an AI-powered interview preparation assistant that helps you practice questions, improve answers."
+    />
 
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://interviewbot.darshans.site/" />
-        <meta property="og:title" content="InterviewBot" />
-        <meta property="og:description" content="An AI-powered interview assistant" />
-        <meta property="og:image" content="https://interviewbot.darshans.site/og-image_res.png" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="InterviewBot" />
-        <meta property="og:locale" content="en_US" />
+    <meta name="keywords" content="interview, ai, assistant" />
+    <meta name="author" content="Darshan S" />
+    <meta name="robots" content="index, follow" />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://interviewbot.darshans.site/" />
-        <meta name="twitter:title" content="InterviewBot" />
-        <meta name="twitter:description" content="An AI-powered interview assistant" />
-        <meta name="twitter:image" content="https://interviewbot.darshans.site/og-image_res.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://interviewbot.darshans.site/" />
+    <meta property="og:title" content="InterviewBot" />
+    <meta property="og:description" content="An AI-powered interview assistant" />
+    <meta
+      property="og:image"
+      content="https://res.cloudinary.com/dqzusd5rw/image/upload/v1769432950/1200x630_tvrhem.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="InterviewBot" />
+    <meta property="og:locale" content="en_US" />
 
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://interviewbot.darshans.site/" />
+    <meta name="twitter:title" content="InterviewBot" />
+    <meta name="twitter:description" content="An AI-powered interview assistant" />
+    <meta
+      name="twitter:image"
+      content="https://res.cloudinary.com/dqzusd5rw/image/upload/v1769432949/1200x628_r65mbd.png"
+    />
 
-        <title>InterviewBot</title>
-        <style>
-            html:not(.loaded) {
-                transition: none !important;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="root"></div>
-        <script>
-            (function () {
-                const root = window.document.documentElement;
-                try {
-                    const theme = localStorage.getItem('vite-ui-theme');
-                    root.classList.remove('light', 'dark');
+    <link rel="canonical" href="https://interviewbot.darshans.site/" />
 
-                    if (theme === 'system') {
-                        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-                            .matches
-                            ? 'dark'
-                            : 'light';
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 
-                        root.classList.add(systemTheme);
-                        return;
-                    }
+    <title>InterviewBot – AI-Powered Interview Preparation Assistant</title>
+    <style>
+      html:not(.loaded) {
+        transition: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      (function () {
+        const root = window.document.documentElement;
+        try {
+          const theme = localStorage.getItem('vite-ui-theme');
+          root.classList.remove('light', 'dark');
 
-                    root.classList.add(theme);
-                } catch (_) {}
-            })();
-        </script>
-        <script type="module" src="/src/main.tsx"></script>
-    </body>
+          if (theme === 'system') {
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+
+            root.classList.add(systemTheme);
+            return;
+          }
+
+          root.classList.add(theme);
+        } catch (_) {}
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
