@@ -109,7 +109,7 @@ wss.on('connection', (ws) => {
             return;
         } else {
             const newMessage = event.data.toString();
-            createMessage(user_id!, interview_id!, newMessage, 'user', [
+            await createMessage(user_id!, interview_id!, newMessage, 'user', [
                 {
                     text: newMessage,
                 },
@@ -127,7 +127,7 @@ wss.on('connection', (ws) => {
                     }
                 }
                 ws.send('__END_OF_STREAM__');
-                createMessage(user_id!, interview_id!, modelReplyRaw, 'model', [
+                await createMessage(user_id!, interview_id!, modelReplyRaw, 'model', [
                     { text: modelReplyRaw },
                 ]);
                 if (

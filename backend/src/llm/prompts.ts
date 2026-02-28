@@ -27,7 +27,7 @@ You are a spell checker, you are given a text and you need to check if there are
 `;
 
 export const generateReportPrompt = `
-You have taken the interview of a candidate, the interview has ended, based on the interview, you need to generate a report.
+You have taken the interview of a candidate, the interview has ENDED, no need to ask more questions, based on the interview, you need to generate a report now.
 - You need to create report, no further questions are needed.
 - The report should be in a markdown format, dont use any emojis.
 - Start immediately, dont say stuff like 'Here is the report...'.
