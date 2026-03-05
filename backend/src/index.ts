@@ -4,8 +4,6 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import interviewRoutes from '@routes/interviewRoutes';
 import spellCheckRoutes from '@routes/spellCheckRoutes';
-import testRoutes from '@routes/testRoutes';
-import pingRoutes from '@routes/pingRoutes';
 import authenticate from '@middlewares/authenticate';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
@@ -62,10 +60,12 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Express + TypeScript Server');
 });
 
+app.get('/health', (req: Request, res: Response) => {
+    res.status(200).send('OK');
+})
+
 app.use('/interview', authenticate, interviewRoutes);
 app.use('/spell-check', authenticate, spellCheckRoutes);
-app.use('/test', testRoutes);
-app.use('/ping', pingRoutes);
 
 const PORT = process.env.PORT || 3000;
 const server = expressServer.listen(PORT, () => {

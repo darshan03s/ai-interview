@@ -10,12 +10,8 @@ import {
     getReport,
     createReport,
     updateReport,
-    // uploadReport,
-    updateInterview,
     endInterview,
 } from '@db/supabaseUtils';
-import gemini from '@llm/gemini';
-import { systemPrompt } from '@llm/prompts';
 import { generateReport } from '@llm/generateReport';
 import { AiMessageType } from '@llm/types';
 import type { ApiResponseType, ConversationMessageType } from '@/types';
@@ -188,147 +184,6 @@ export async function startInterviewController(req: Request, res: Response<ApiRe
             },
         });
         return;
-    } catch (error) {
-        console.error('Error preparing interview:', error);
-        res.status(500).json({
-            success: false,
-            error: { code: 'ERROR_PREPARING_INTERVIEW', message: 'Error preparing interview' },
-        });
-        return;
-    }
-}
-
-export async function continueInterviewController(req: Request, res: Response<ApiResponseType>) {
-    const { interview_id, message } = req.body;
-    // 1. Check if interview_id and message are provided
-    if (!interview_id) {
-        res.status(400).json({
-            success: false,
-            error: { code: 'INTERVIEW_ID_REQUIRED', message: 'Interview ID is required' },
-        });
-        return;
-    }
-
-    // 2. Check if message is provided
-    if (!message) {
-        res.status(400).json({
-            success: false,
-            error: { code: 'MESSAGE_REQUIRED', message: 'Message is required' },
-        });
-        return;
-    }
-
-    // 3. Check if user is authenticated
-    const user = req.user;
-    if (!user) {
-        res.status(401).json({
-            success: false,
-            error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
-        });
-        return;
-    }
-
-    // 4. Check if interview exists
-    const interview = await getInterview(user.id, interview_id);
-    if (!interview) {
-        res.status(404).json({
-            success: false,
-            error: { code: 'INTERVIEW_NOT_FOUND', message: 'Interview not found' },
-        });
-        return;
-    }
-
-    // 5. Check if interview is completed
-    if (interview.is_completed) {
-        res.status(200).json({
-            success: true,
-            message: 'Interview is already completed',
-            data: interview,
-        });
-        return;
-    }
-
-    console.log('Continuing interview for user:', user.id, interview_id);
-
-    try {
-        // 6. Get messages history
-        const messagesHistory = await getMessages(interview_id, user.id);
-        const messages: AiMessageType[] = [];
-
-        // 7. Check if messages history is found
-        if (!messagesHistory) {
-            res.status(500).json({
-                success: false,
-                error: { code: 'ERROR_GETTING_MESSAGES', message: 'Error getting messages' },
-            });
-            return;
-        }
-
-        // 8. Transform messages history to for AI
-        messagesHistory.forEach((message) => {
-            messages.push({
-                role: message.role as 'user' | 'model',
-                parts: message.parts as Part[],
-            });
-        });
-
-        // 9. Add new message to messages history for AI
-        messages.push({
-            role: 'user',
-            parts: [
-                {
-                    text: message,
-                },
-            ],
-        });
-
-        // 10. Create new message in database for user
-        await createMessage(user.id, interview_id, message, 'user', [
-            {
-                text: message,
-            },
-        ]);
-
-        // 11. Generate response from AI
-        const stream = await gemini.models.generateContentStream({
-            model: 'gemini-2.5-flash',
-            contents: messages,
-            config: {
-                systemInstruction:
-                    systemPrompt +
-                    'Interview created at: ' +
-                    new Date(interview.created_at).toLocaleString(),
-                maxOutputTokens: 1_000_000,
-                temperature: 0.5,
-                thinkingConfig: {
-                    thinkingBudget: 1024,
-                },
-            },
-        });
-
-        // 12. Send response stream, combine chunks to a single string
-        let modelReplyRaw = '';
-        for await (const chunk of stream) {
-            modelReplyRaw += chunk.text;
-            res.write(chunk.text);
-        }
-
-        res.end();
-
-        // 13. Create new message in database from response
-        await createMessage(user.id, interview_id, modelReplyRaw, 'model', [
-            { text: modelReplyRaw },
-        ]);
-
-        // 14. Check if response contains end of interview message
-        if (
-            modelReplyRaw.includes(
-                'Thank you for your time, we will get back to you with the results.'
-            )
-        ) {
-            // 15. Update interview as completed
-            await updateInterview(user.id, interview_id, true);
-        }
     } catch (error) {
         console.error('Error preparing interview:', error);
         res.status(500).json({
@@ -563,15 +418,6 @@ export async function getReportController(req: Request, res: Response<ApiRespons
             });
             return;
         }
-        // const reportUrl = await uploadReport(interview_id, report);
-        // if (!reportUrl) {
-        //     res.status(500).json({
-        //         success: false,
-        //         error: { code: "ERROR_UPLOADING_REPORT", message: "Error uploading report" },
-        //     });
-        //     return;
-        // }
-        // report = await updateReport(user.id, interview_id, report, reportUrl, true);
         report = await updateReport(user.id, interview_id, report, '', true);
         if (!report) {
             res.status(500).json({

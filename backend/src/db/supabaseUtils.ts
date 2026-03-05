@@ -1,6 +1,5 @@
 import supabase from './supabase';
 import { Part } from '@google/genai';
-// import { mdToPdf } from "@utils/mdToPdf";
 import type { Tables } from './supabaseType';
 
 type InterviewRow = Tables<'interviews'>;
@@ -280,28 +279,6 @@ export const updateReport = async (
     }
     return data;
 };
-
-// export const uploadReport = async (interview_id: string, report: string) => {
-//     const pdf = await mdToPdf(report);
-//     const pdfName = `${interview_id}-report.pdf`;
-//     const { data, error } = await supabase.storage.from("reports").upload(pdfName, pdf, {
-//         contentType: "application/pdf",
-//     });
-//     if (error) {
-//         console.error("Error uploading report:", error);
-//         return null;
-//     }
-//     const expiresIn = 3600 * 24 * 30; // 30 days
-//     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-//         .from("reports")
-//         .createSignedUrl(data.path, expiresIn);
-//     if (signedUrlError) {
-//         console.error("Error creating signed URL:", signedUrlError);
-//         return null;
-//     }
-
-//     return signedUrlData.signedUrl;
-// };
 
 export const endInterview = async (
     interview_id: string,

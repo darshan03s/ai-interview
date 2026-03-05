@@ -38,22 +38,6 @@ export const startInterview = async (token: string, interviewId: string) => {
     return response;
 };
 
-export const continueInterview = async (token: string, interviewId: string, message: string) => {
-    const response = await fetch(`${BASE_URL}/interview/continue-interview`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            interview_id: interviewId,
-            message: message,
-        }),
-    });
-
-    return response;
-};
-
 export const getMessagesHistory = async (token: string, interviewId: string) => {
     const response = await fetch(`${BASE_URL}/interview/get-messages`, {
         method: 'POST',
